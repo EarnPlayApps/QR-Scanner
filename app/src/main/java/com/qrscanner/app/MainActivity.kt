@@ -110,7 +110,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.flashButton).setOnClickListener { toggleFlash() }
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
-        findViewById<Button>(R.id.settingsButton).setOnClickListener { toggleFlash() }
+        findViewById<Button>(R.id.settingsButton).setOnClickListener { showSettings() }
+        findViewById<Button>(R.id.resultBackButton).setOnClickListener { beginScanning() }
+        findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
         findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
@@ -131,6 +133,7 @@ class MainActivity : AppCompatActivity() {
         if (isFinishing || isDestroyed) return
         scanningStarted = true
         findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
+        findViewById<View>(R.id.resultScreen).visibility = View.GONE
         findViewById<View>(R.id.mainContent).visibility = View.VISIBLE
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             permissionButton.visibility = View.GONE
@@ -146,7 +149,10 @@ class MainActivity : AppCompatActivity() {
             MobileAds.initialize(this) {
                 runOnUiThread {
                     if (isFinishing || isDestroyed) return@runOnUiThread
-                    runCatching { findViewById<AdView>(R.id.bannerAd).loadAd(AdRequest.Builder().build()) }
+                    runCatching {
+                        findViewById<AdView>(R.id.bannerAd).loadAd(AdRequest.Builder().build())
+                        findViewById<AdView>(R.id.resultBannerAd).loadAd(AdRequest.Builder().build())
+                    }
                     loadInterstitial()
                     loadAppOpenAd()
                 }
@@ -247,6 +253,7 @@ class MainActivity : AppCompatActivity() {
         val future = ProcessCameraProvider.getInstance(this)
         future.addListener({
             try {
+                if (isFinishing || isDestroyed || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) return@addListener
                 val p = future.get()
                 provider = p
                 val previewUseCase = Preview.Builder().build().also { it.surfaceProvider = preview.surfaceProvider }
@@ -272,8 +279,11 @@ class MainActivity : AppCompatActivity() {
                                 return@addOnSuccessListener
                             }
                             runOnUiThread {
-                                if (!isFinishing && !isDestroyed) showScanResult(value, format)
-                                else locked = false
+                                if (!isFinishing && !isDestroyed && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                                    showScanResult(value, format)
+                                } else {
+                                    locked = false
+                                }
                             }
                         }
                         .addOnCompleteListener { runCatching { proxy.close() } }
@@ -365,37 +375,37 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showResult(value: String, format: String) {
-        val view = layoutInflater.inflate(R.layout.dialog_result, null)
-        view.findViewById<TextView>(R.id.resultText).text = value
-        view.findViewById<TextView>(R.id.resultType).text = "SCAN RESULT • $format"
-        val open = view.findViewById<Button>(R.id.openButton)
+        if (isFinishing || isDestroyed) return
+
+        findViewById<View>(R.id.mainContent).visibility = View.GONE
+        findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
+        findViewById<View>(R.id.resultScreen).visibility = View.VISIBLE
+
+        val resultText = findViewById<TextView>(R.id.resultText)
+        val resultType = findViewById<TextView>(R.id.resultType)
+        val open = findViewById<Button>(R.id.openButton)
+
+        resultText.text = value
+        resultType.text = "SCAN RESULT  •  $format"
         open.isEnabled = isWebUrl(value)
         open.alpha = if (open.isEnabled) 1f else .45f
-        val dialog = AlertDialog.Builder(this).setView(view).create()
-        dialog.setOnDismissListener {
-            locked = false
-            scanAgainButton.visibility = View.GONE
-            statusText.text = "Kamera sedang disediakan..."
-            window.decorView.postDelayed({
-                if (!isFinishing && !isDestroyed &&
-                    ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                    if (autoScanEnabled) startCamera()
-                }
-            }, 80)
-            maybeShowInterstitial()
+
+        open.setOnClickListener {
+            if (isWebUrl(value)) {
+                runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value))) }
+                    .onFailure { Toast.makeText(this, "Link tidak dapat dibuka.", Toast.LENGTH_SHORT).show() }
+            }
         }
 
-        view.findViewById<Button>(R.id.copyButton).setOnClickListener {
+        findViewById<Button>(R.id.copyButton).setOnClickListener {
             runCatching {
                 (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
                     .setPrimaryClip(ClipData.newPlainText("QR result", value))
                 Toast.makeText(this, "Keputusan disalin.", Toast.LENGTH_SHORT).show()
             }
         }
-        open.setOnClickListener {
-            if (isWebUrl(value)) runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value))) }
-        }
-        view.findViewById<Button>(R.id.shareButton).setOnClickListener {
+
+        findViewById<Button>(R.id.shareButton).setOnClickListener {
             runCatching {
                 startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"
@@ -403,13 +413,19 @@ class MainActivity : AppCompatActivity() {
                 }, "Kongsi keputusan scan"))
             }
         }
-        dialog.show()
 
         if (autoOpenEnabled && isWebUrl(value)) {
             window.decorView.postDelayed({
-                if (!isFinishing && !isDestroyed) runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value))) }
+                if (!isFinishing && !isDestroyed && findViewById<View>(R.id.resultScreen).visibility == View.VISIBLE) {
+                    runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value))) }
+                }
             }, 350)
         }
+
+        runCatching {
+            findViewById<AdView>(R.id.resultBannerAd).loadAd(AdRequest.Builder().build())
+        }
+        maybeShowInterstitial()
     }
 
     private fun maybeShowInterstitial() {
@@ -601,7 +617,12 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (!firstLaunch && backgroundAt > 0 && System.currentTimeMillis() - backgroundAt > 60000) showAppOpenIfReady()
         firstLaunch = false
-        if (::preview.isInitialized && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED && scanningStarted && provider == null) startCamera()
+        if (::preview.isInitialized &&
+            findViewById<View>(R.id.resultScreen).visibility != View.VISIBLE &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
+            scanningStarted && provider == null) {
+            preview.post { startCamera() }
+        }
     }
     override fun onPause() {
         super.onPause()
