@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var permissionButton: Button
     private lateinit var cameraMessage: TextView
     private lateinit var statusText: TextView
-    private lateinit var scanAgainButton: ImageButton
+    private lateinit var scanAgainButton: Button
     private var provider: ProcessCameraProvider? = null
     private var camera: Camera? = null
     private val executor = Executors.newSingleThreadExecutor()
@@ -111,23 +111,25 @@ class MainActivity : AppCompatActivity() {
         setupAds()
 
         findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
-        findViewById<ImageButton>(R.id.flashButton).setOnClickListener { toggleFlash() }
-        findViewById<TextView>(R.id.languageButton).setOnClickListener { toggleLanguage() }
+        findViewById<Button>(R.id.flashButton).setOnClickListener { toggleFlash() }
+        findViewById<Button>(R.id.flashHeaderButton).setOnClickListener { toggleFlash() }
         findViewById<Button>(R.id.zoomOneButton).setOnClickListener { setCameraZoom(1f) }
         findViewById<Button>(R.id.zoomTwoButton).setOnClickListener { setCameraZoom(2f) }
-        findViewById<Button>(R.id.saveHistoryButton).setOnClickListener { Toast.makeText(this, t("Keputusan telah disimpan ke sejarah.", "Result saved to history."), Toast.LENGTH_SHORT).show() }
-        findViewById<ImageButton>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
-        // Top-left menu is visual-only for now; no action is attached.
+        findViewById<Button>(R.id.saveHistoryButton).setOnClickListener { Toast.makeText(this, "Keputusan telah disimpan ke sejarah.", Toast.LENGTH_SHORT).show() }
+        findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
+        findViewById<Button>(R.id.settingsButton).setOnClickListener { showSettings() }
         findViewById<ImageButton>(R.id.resultBackButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { beginScanning() }
-        findViewById<ImageButton>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
-        findViewById<ImageButton>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
-        findViewById<ImageButton>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
-        findViewById<ImageButton>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
+        findViewById<Button>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
+        findViewById<Button>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
+        findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
+        findViewById<Button>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
         scanAgainButton.setOnClickListener { startCamera() }
+        // Reference design uses a launch screen, then enters the scanner automatically.
         window.decorView.postDelayed({
             if (!isFinishing && !isDestroyed && findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE) beginScanning()
         }, 1400L)
+
         permissionButton.setOnClickListener {
             if (!prefs.getBoolean("asked_camera", false) || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
                 prefs.edit().putBoolean("asked_camera", true).apply()
@@ -143,21 +145,15 @@ class MainActivity : AppCompatActivity() {
         languageMs = !languageMs
         prefs.edit().putBoolean("language_ms", languageMs).apply()
         applyLanguage()
-        Toast.makeText(this, if (languageMs) "Bahasa Melayu" else "English", Toast.LENGTH_SHORT).show()
     }
 
     private fun applyLanguage() {
         findViewById<TextView>(R.id.languageButton).text = if (languageMs) "BM" else "EN"
-        findViewById<TextView>(R.id.welcomeSubtitle).text = "Scan Anything, Anytime"
-        findViewById<TextView>(R.id.featureQrLabel).text = "QR Code"
-        findViewById<TextView>(R.id.featureBarcodeLabel).text = "Barcode"
         findViewById<TextView>(R.id.featureMoreLabel).text = if (languageMs) "dan Lagi" else "and More"
         findViewById<TextView>(R.id.welcomeTagline).text = if (languageMs) "Imbas Dunia Dengan Lebih Bijak" else "Scan a Smarter World"
-        findViewById<Button>(R.id.startScanButton).text = if (languageMs) "Mula Scan" else "Start Scan"
         findViewById<TextView>(R.id.cameraMessage).text = if (languageMs) "Halakan QR / barcode ke ruang ini" else "Point a QR / barcode into this area"
         findViewById<TextView>(R.id.flashLabel).text = if (languageMs) "Lampu" else "Flash"
         findViewById<TextView>(R.id.galleryLabel).text = if (languageMs) "Galeri" else "Gallery"
-        findViewById<TextView>(R.id.bottomScanLabel).text = "Scan"
         findViewById<TextView>(R.id.bottomHistoryLabel).text = if (languageMs) "Sejarah" else "History"
         findViewById<TextView>(R.id.bottomSettingsLabel).text = if (languageMs) "Tetapan" else "Settings"
         findViewById<TextView>(R.id.bottomMoreLabel).text = if (languageMs) "Lainnya" else "More"
@@ -169,8 +165,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.saveHistoryButton).text = if (languageMs) "Simpan" else "Save"
         findViewById<Button>(R.id.resultScanAgainButton).text = if (languageMs) "Scan Lagi" else "Scan Again"
     }
-
-    private fun t(ms: String, en: String) = if (languageMs) ms else en
 
     private fun beginScanning() {
         if (isFinishing || isDestroyed) return
@@ -429,15 +423,14 @@ class MainActivity : AppCompatActivity() {
         val open = findViewById<Button>(R.id.openButton)
 
         resultText.text = value
-        resultType.text = if (isWebUrl(value)) t("Laman Web", "Website") else format.replace("_", " ")
-        findViewById<TextView>(R.id.resultInfo).text = t("Jenis: " + (if (format == "QR_CODE") "QR Code" else format.replace("_", " ")) + "\nKandungan: " + (if (isWebUrl(value)) "URL" else "Teks") + "\nMasa: ", "Type: " + (if (format == "QR_CODE") "QR Code" else format.replace("_", " ")) + "\nContent: " + (if (isWebUrl(value)) "URL" else "Text") + "\nTime: ") + SimpleDateFormat("dd MMM yyyy, h:mm a", Locale.getDefault()).format(Date())
+        resultType.text = "SCAN RESULT  •  $format"
         open.isEnabled = isWebUrl(value)
         open.alpha = if (open.isEnabled) 1f else .45f
 
         open.setOnClickListener {
             if (isWebUrl(value)) {
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value))) }
-                    .onFailure { Toast.makeText(this, t("Link tidak dapat dibuka.", "Link could not be opened."), Toast.LENGTH_SHORT).show() }
+                    .onFailure { Toast.makeText(this, "Link tidak dapat dibuka.", Toast.LENGTH_SHORT).show() }
             }
         }
 
@@ -445,7 +438,7 @@ class MainActivity : AppCompatActivity() {
             runCatching {
                 (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
                     .setPrimaryClip(ClipData.newPlainText("QR result", value))
-                Toast.makeText(this, t("Keputusan disalin.", "Result copied."), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Keputusan disalin.", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -454,7 +447,7 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"
                     putExtra(Intent.EXTRA_TEXT, value)
-                }, t("Kongsi keputusan scan", "Share scan result")))
+                }, "Kongsi keputusan scan"))
             }
         }
 
@@ -488,7 +481,7 @@ class MainActivity : AppCompatActivity() {
         if (!c.cameraInfo.hasFlashUnit()) return Toast.makeText(this, "Telefon ini tiada flashlight kamera.", Toast.LENGTH_SHORT).show()
         torchOn = !torchOn
         runCatching { c.cameraControl.enableTorch(torchOn) }
-        findViewById<ImageButton>(R.id.flashButton).alpha = if (torchOn) 1f else 0.82f
+        findViewById<Button>(R.id.flashButton).text = if (torchOn) "Flash ON" else "Flash"
     }
 
     private fun showMoreMenu() {
