@@ -136,7 +136,7 @@ class MainActivity : AppCompatActivity() {
 
                     (adView.headlineView as TextView).text = ad.headline
 
-                    val body = ad.bodyView as TextView
+                    val body = adView.findViewById<TextView>(R.id.nativeAdBody)
                     if (ad.body.isNullOrBlank()) {
                         body.visibility = View.GONE
                     } else {
@@ -144,7 +144,7 @@ class MainActivity : AppCompatActivity() {
                         body.text = ad.body
                     }
 
-                    val cta = ad.callToActionView as Button
+                    val cta = adView.findViewById<Button>(R.id.nativeAdCallToAction)
                     if (ad.callToAction.isNullOrBlank()) {
                         cta.visibility = View.GONE
                     } else {
