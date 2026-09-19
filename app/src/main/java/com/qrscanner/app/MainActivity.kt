@@ -142,17 +142,6 @@ class MainActivity : AppCompatActivity() {
             // Ads must never be allowed to crash the scanner.
         }
     }
-        Thread {
-            MobileAds.initialize(this) {
-                runOnUiThread {
-                    val banner = findViewById<com.google.android.gms.ads.AdView>(R.id.bannerAd)
-                    banner.loadAd(AdRequest.Builder().build())
-                    loadInterstitial()
-                    loadAppOpenAd()
-                }
-            }
-        }.start()
-    }
 
     private fun loadInterstitial() {
         InterstitialAd.load(
