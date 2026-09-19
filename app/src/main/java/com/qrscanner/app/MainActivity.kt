@@ -111,7 +111,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.flashButton).setOnClickListener { toggleFlash() }
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
         findViewById<Button>(R.id.historyButton).setOnClickListener { showHistory() }
-        findViewById<Button>(R.id.settingsButton).setOnClickListener { showSettings() }
+        findViewById<Button>(R.id.settingsButton).setOnClickListener { toggleFlash() }
+        findViewById<Button>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
+        findViewById<Button>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
+        findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
+        findViewById<Button>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
         scanAgainButton.setOnClickListener { startCamera() }
         permissionButton.setOnClickListener {
             if (!prefs.getBoolean("asked_camera", false) || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
@@ -422,6 +426,36 @@ class MainActivity : AppCompatActivity() {
         torchOn = !torchOn
         runCatching { c.cameraControl.enableTorch(torchOn) }
         findViewById<Button>(R.id.flashButton).text = if (torchOn) "Flash ON" else "Flash"
+    }
+
+    private fun showMoreMenu() {
+        val choices = arrayOf("Galeri", "Flash", "Kamera depan / belakang", "Scan Lagi")
+        AlertDialog.Builder(this)
+            .setTitle("Lainnya")
+            .setItems(choices) { _, which ->
+                when (which) {
+                    0 -> pickImage.launch("image/*")
+                    1 -> toggleFlash()
+                    2 -> {
+                        val cameraChoices = arrayOf("Kamera belakang", "Kamera depan")
+                        AlertDialog.Builder(this)
+                            .setTitle("Pilih Kamera")
+                            .setSingleChoiceItems(cameraChoices, if (useFrontCamera) 1 else 0) { dialog, selected ->
+                                useFrontCamera = selected == 1
+                                saveSettings()
+                                if (scanningStarted && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                    startCamera()
+                                }
+                                dialog.dismiss()
+                            }
+                            .setNegativeButton("Batal", null)
+                            .show()
+                    }
+                    3 -> startCamera()
+                }
+            }
+            .setNegativeButton("Tutup", null)
+            .show()
     }
 
     private fun showHistory() {
