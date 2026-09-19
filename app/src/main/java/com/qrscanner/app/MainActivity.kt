@@ -110,7 +110,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.flashButton).setOnClickListener { toggleFlash() }
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
-        findViewById<Button>(R.id.historyButton).setOnClickListener { showHistory() }
         findViewById<Button>(R.id.settingsButton).setOnClickListener { toggleFlash() }
         findViewById<Button>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
