@@ -208,7 +208,12 @@ class MainActivity : AppCompatActivity() {
                 loadAppOpenAd()
             }
         }
-        ad.show(this)
+        runCatching { ad.show(this) }
+            .onFailure {
+                appOpenAd = null
+                appOpenShowing = false
+                loadAppOpenAd()
+            }
     }
 
     private fun maybeShowInterstitial() {
@@ -265,6 +270,8 @@ class MainActivity : AppCompatActivity() {
                                         if (isFinishing || isDestroyed) return@runOnUiThread
                                         runCatching {
                                             saveHistory(value, format)
+                                            scanCount++
+                                            prefs.edit().putInt("scan_count", scanCount).apply()
                                             handleFoundResult(value, format)
                                         }.onFailure {
                                             locked = false
