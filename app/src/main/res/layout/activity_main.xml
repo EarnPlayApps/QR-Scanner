@@ -624,5 +624,5 @@
                 android:background="@drawable/bg_primary"/>
 
         </LinearLayout>
-    </ScrollView>
+    </LinearLayout>
 </FrameLayout>
