@@ -7,24 +7,133 @@
     android:background="@color/bg">
 
     <LinearLayout
+        android:id="@+id/welcomeScreen"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp"
+        android:paddingTop="34dp"
+        android:paddingBottom="24dp"
+        android:background="@color/bg">
+
+        <Space android:layout_width="1dp" android:layout_height="28dp"/>
+
+        <ImageView
+            android:id="@+id/welcomeLogo"
+            android:layout_width="126dp"
+            android:layout_height="126dp"
+            android:src="@drawable/ic_scanner_logo"
+            android:contentDescription="QR Scanner"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="QR"
+                android:textColor="@color/orange"
+                android:textSize="36sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" Scanner"
+                android:textColor="@color/ink"
+                android:textSize="36sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="Scan QR &amp; Barcode dengan pantas"
+            android:textColor="@color/muted"
+            android:textSize="14sp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:orientation="vertical"
+            android:background="@drawable/bg_result"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SATU APP, SEMUA SCAN"
+                android:textColor="@color/orange"
+                android:textSize="11sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:text="QR Code  •  Barcode  •  Galeri"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Pilih Mula Scan untuk membuka kamera."
+                android:textColor="@color/muted"
+                android:textSize="12sp"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/startScanButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_primary"
+            android:text="Mula Scan"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="11dp"
+            android:gravity="center"
+            android:text="Cepat • Mudah • Selamat"
+            android:textColor="@color/muted"
+            android:textSize="11sp"/>
+
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/mainContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="0dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="10dp"
         android:visibility="gone">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="58dp"
+            android:layout_height="52dp"
             android:gravity="center_vertical">
 
             <ImageView
-                android:layout_width="42dp"
-                android:layout_height="42dp"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
                 android:src="@drawable/ic_scanner_logo"
                 android:contentDescription="QR Scanner"
                 android:layout_marginEnd="9dp"/>
@@ -40,27 +149,25 @@
                     android:layout_height="wrap_content"
                     android:text="QR"
                     android:textColor="@color/orange"
-                    android:textSize="25sp"
-                    android:textStyle="bold"
-                    android:fontFamily="sans-serif"/>
+                    android:textSize="22sp"
+                    android:textStyle="bold"/>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text=" Scanner"
                     android:textColor="@color/ink"
-                    android:textSize="25sp"
-                    android:textStyle="bold"
-                    android:fontFamily="sans-serif"/>
+                    android:textSize="22sp"
+                    android:textStyle="bold"/>
             </LinearLayout>
 
             <Button
                 android:id="@+id/settingsButton"
-                android:layout_width="58dp"
-                android:layout_height="42dp"
+                android:layout_width="82dp"
+                android:layout_height="40dp"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
-                android:text="Flash"
+                android:text="Tetapan"
                 android:textAllCaps="false"
                 android:textSize="11sp"
                 android:textStyle="bold"
@@ -68,11 +175,20 @@
                 android:background="@drawable/bg_glass"/>
         </LinearLayout>
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Halakan QR atau barcode ke dalam bingkai"
+            android:textColor="@color/muted"
+            android:textSize="12sp"/>
+
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="285dp"
-            android:minHeight="250dp"
-            android:background="@drawable/bg_camera">
+            android:layout_height="258dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_camera"
+            android:clipToOutline="true">
 
             <androidx.camera.view.PreviewView
                 android:id="@+id/preview"
@@ -86,8 +202,8 @@
                 android:background="@drawable/bg_camera_overlay"/>
 
             <FrameLayout
-                android:layout_width="224dp"
-                android:layout_height="224dp"
+                android:layout_width="220dp"
+                android:layout_height="220dp"
                 android:layout_gravity="center">
 
                 <View
@@ -102,15 +218,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="top|center_horizontal"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="8dp"
                     android:background="@drawable/bg_hint"
-                    android:paddingStart="13dp"
-                    android:paddingEnd="13dp"
-                    android:paddingTop="7dp"
-                    android:paddingBottom="7dp"
-                    android:text="Halakan QR / barcode ke ruang ini"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp"
+                    android:text="Letak QR atau barcode dalam bingkai"
                     android:textColor="@color/white"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold"/>
             </FrameLayout>
 
@@ -118,15 +234,15 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="9dp"
                 android:background="@drawable/bg_hint"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:paddingTop="7dp"
-                android:paddingBottom="7dp"
-                android:text="QR Code • Barcode"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:text="LIVE CAMERA"
                 android:textColor="@color/white"
-                android:textSize="11sp"
+                android:textSize="9sp"
                 android:textStyle="bold"/>
         </FrameLayout>
 
@@ -135,28 +251,26 @@
             android:layout_width="match_parent"
             android:layout_height="28dp"
             android:gravity="center"
+            android:paddingTop="5dp"
             android:text="Sedia untuk scan"
             android:textColor="@color/muted"
-            android:textSize="11sp"
-            android:paddingTop="5dp"
-            android:paddingBottom="4dp"/>
+            android:textSize="11sp"/>
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="58dp"
-            android:gravity="center"
+            android:layout_height="54dp"
             android:orientation="horizontal">
 
             <Button
                 android:id="@+id/flashButton"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:minHeight="0dp"
                 android:text="Flash"
                 android:textAllCaps="false"
                 android:textColor="@color/ink"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:background="@drawable/bg_glass"/>
 
             <Space android:layout_width="8dp" android:layout_height="1dp"/>
@@ -164,28 +278,27 @@
             <Button
                 android:id="@+id/scanAgainButton"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:minHeight="0dp"
-                android:text="Scan"
+                android:text="Scan Lagi"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
                 android:textStyle="bold"
                 android:textSize="12sp"
-                android:background="@drawable/bg_primary"/>
-
-            <Space android:layout_width="8dp" android:layout_height="1dp"/>
+                android:background="@drawable/bg_primary"
+                android:visibility="gone"/>
 
             <Button
                 android:id="@+id/galleryButton"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:minHeight="0dp"
                 android:text="Galeri"
                 android:textAllCaps="false"
                 android:textColor="@color/ink"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:background="@drawable/bg_glass"/>
         </LinearLayout>
 
@@ -193,7 +306,7 @@
             android:id="@+id/bannerAd"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="6dp"
             ads:adSize="BANNER"
             ads:adUnitId="ca-app-pub-3940256099942544/9214589741"/>
 
@@ -208,19 +321,18 @@
             android:id="@+id/permissionButton"
             android:layout_width="match_parent"
             android:layout_height="44dp"
+            android:layout_marginTop="4dp"
             android:text="Benarkan Kamera"
             android:textAllCaps="false"
             android:visibility="gone"/>
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="68dp"
-            android:layout_marginTop="2dp"
+            android:layout_height="62dp"
+            android:layout_marginTop="5dp"
             android:background="@drawable/bg_bottom_nav"
             android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingStart="5dp"
-            android:paddingEnd="5dp">
+            android:orientation="horizontal">
 
             <Button
                 android:id="@+id/bottomScanButton"
@@ -246,91 +358,137 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/welcomeScreen"
+        android:id="@+id/resultScreen"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp"
-        android:paddingTop="30dp"
-        android:paddingBottom="24dp"
-        android:background="@color/bg">
-
-        <ImageView
-            android:id="@+id/welcomeLogo"
-            android:layout_width="138dp"
-            android:layout_height="138dp"
-            android:src="@drawable/ic_scanner_logo"
-            android:contentDescription="QR Scanner"/>
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp"
+        android:background="@color/bg"
+        android:visibility="gone">
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:gravity="center_vertical">
+
+            <Button
+                android:id="@+id/resultBackButton"
+                android:layout_width="44dp"
+                android:layout_height="40dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:text="‹"
+                android:textSize="26sp"
+                android:textColor="@color/ink"
+                android:background="@drawable/bg_glass"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Hasil Scan"
+                android:textColor="@color/ink"
+                android:textSize="22sp"
+                android:textStyle="bold"/>
+
+            <ImageView
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:src="@drawable/ic_scanner_logo"
+                android:contentDescription="QR Scanner"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:orientation="horizontal">
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:background="@drawable/bg_result"
+            android:padding="20dp">
 
             <TextView
+                android:id="@+id/resultType"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="QR"
+                android:text="QR_CODE"
                 android:textColor="@color/orange"
-                android:textSize="38sp"
+                android:textSize="11sp"
                 android:textStyle="bold"/>
 
             <TextView
-                android:layout_width="wrap_content"
+                android:id="@+id/resultText"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text=" Scanner"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_glass"
+                android:padding="16dp"
                 android:textColor="@color/ink"
-                android:textSize="38sp"
-                android:textStyle="bold"/>
+                android:textSize="15sp"
+                android:maxLines="8"
+                android:ellipsize="middle"/>
+
+            <Button
+                android:id="@+id/openButton"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="14dp"
+                android:text="Buka Link"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:background="@drawable/bg_primary"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="8dp">
+
+                <Button
+                    android:id="@+id/copyButton"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:text="Salin"
+                    android:textAllCaps="false"
+                    android:textColor="@color/ink"
+                    android:background="@drawable/bg_glass"/>
+
+                <Space android:layout_width="8dp" android:layout_height="1dp"/>
+
+                <Button
+                    android:id="@+id/shareButton"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:text="Kongsi"
+                    android:textAllCaps="false"
+                    android:textColor="@color/ink"
+                    android:background="@drawable/bg_glass"/>
+            </LinearLayout>
         </LinearLayout>
 
-        <TextView
+        <com.google.android.gms.ads.AdView
+            android:id="@+id/resultBannerAd"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:gravity="center"
-            android:text="Scan Anything, Anytime"
-            android:textColor="@color/muted"
-            android:textSize="14sp"
-            android:letterSpacing="0.06"/>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="26dp"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Fast" android:textColor="@color/ink" android:textStyle="bold" android:textSize="11sp"/>
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Private" android:textColor="@color/ink" android:textStyle="bold" android:textSize="11sp"/>
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Easy" android:textColor="@color/ink" android:textStyle="bold" android:textSize="11sp"/>
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Mobile Ready" android:textColor="@color/ink" android:textStyle="bold" android:textSize="11sp"/>
-        </LinearLayout>
+            android:layout_height="50dp"
+            android:layout_marginTop="16dp"
+            ads:adSize="BANNER"
+            ads:adUnitId="ca-app-pub-3940256099942544/9214589741"/>
 
         <Button
-            android:id="@+id/startScanButton"
+            android:id="@+id/resultScanAgainButton"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="30dp"
-            android:background="@drawable/bg_primary"
-            android:text="Mula Scan"
+            android:layout_height="52dp"
+            android:layout_marginTop="12dp"
+            android:text="Scan Lagi"
             android:textAllCaps="false"
             android:textColor="@color/white"
-            android:textSize="16sp"
-            android:textStyle="bold"/>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center"
-            android:text="QR Code • Barcode • Galeri • Sejarah"
-            android:textColor="@color/muted"
-            android:textSize="11sp"
             android:textStyle="bold"
-            android:letterSpacing="0.05"/>
+            android:background="@drawable/bg_primary"/>
     </LinearLayout>
 </FrameLayout>
