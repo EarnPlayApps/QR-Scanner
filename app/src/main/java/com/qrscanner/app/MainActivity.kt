@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var permissionButton: Button
     private lateinit var cameraMessage: TextView
     private lateinit var statusText: TextView
-    private lateinit var scanAgainButton: Button
+    private lateinit var scanAgainButton: ImageButton
     private var provider: ProcessCameraProvider? = null
     private var camera: Camera? = null
     private val executor = Executors.newSingleThreadExecutor()
@@ -108,19 +108,19 @@ class MainActivity : AppCompatActivity() {
         setupAds()
 
         findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
-        findViewById<Button>(R.id.flashButton).setOnClickListener { toggleFlash() }
-        findViewById<Button>(R.id.flashHeaderButton).setOnClickListener { toggleFlash() }
+        findViewById<ImageButton>(R.id.flashButton).setOnClickListener { toggleFlash() }
+        findViewById<ImageButton>(R.id.flashHeaderButton).setOnClickListener { toggleFlash() }
         findViewById<Button>(R.id.zoomOneButton).setOnClickListener { setCameraZoom(1f) }
         findViewById<Button>(R.id.zoomTwoButton).setOnClickListener { setCameraZoom(2f) }
         findViewById<Button>(R.id.saveHistoryButton).setOnClickListener { Toast.makeText(this, "Keputusan telah disimpan ke sejarah.", Toast.LENGTH_SHORT).show() }
-        findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
-        findViewById<Button>(R.id.settingsButton).setOnClickListener { showSettings() }
+        findViewById<ImageButton>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
+        findViewById<ImageButton>(R.id.settingsButton).setOnClickListener { showSettings() }
         findViewById<Button>(R.id.resultBackButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { beginScanning() }
-        findViewById<Button>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
-        findViewById<Button>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
-        findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
-        findViewById<Button>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
+        findViewById<ImageButton>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
+        findViewById<ImageButton>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
+        findViewById<ImageButton>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
+        findViewById<ImageButton>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
         scanAgainButton.setOnClickListener { startCamera() }
         // Reference design uses a launch screen, then enters the scanner automatically.
         window.decorView.postDelayed({
@@ -395,7 +395,7 @@ class MainActivity : AppCompatActivity() {
         val open = findViewById<Button>(R.id.openButton)
 
         resultText.text = value
-        resultType.text = "SCAN RESULT  •  $format"
+        resultType.text = if (isWebUrl(value)) "Website" else format.replace("_", " ")\n        findViewById<TextView>(R.id.resultInfo).text = "Jenis                                      ${if (format == "QR_CODE") "QR Code" else format.replace("_", " ")}\\nKandungan                            ${if (isWebUrl(value)) "URL" else "Text"}\\nMasa                                      ${SimpleDateFormat("dd MMM yyyy, h:mm a", Locale.getDefault()).format(Date())}"
         open.isEnabled = isWebUrl(value)
         open.alpha = if (open.isEnabled) 1f else .45f
 
