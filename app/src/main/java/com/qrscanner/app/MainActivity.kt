@@ -430,8 +430,8 @@ class MainActivity : AppCompatActivity() {
 
         val cameraButton = Button(this).apply {
             text = if (useFrontCamera) "Kamera: Depan" else "Kamera: Belakang"
-            background = ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_primary)
-            setTextColor(ContextCompat.getColor(this@MainActivity, android.R.color.white))
+            background = ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_glass)
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ink))
             isAllCaps = false
             minHeight = 0
             setPadding(18, 0, 18, 0)
@@ -463,8 +463,8 @@ class MainActivity : AppCompatActivity() {
 
         val historyButton = Button(this).apply {
             text = "Padam Semua Sejarah"
-            background = ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_primary)
-            setTextColor(ContextCompat.getColor(this@MainActivity, android.R.color.white))
+            background = ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_glass)
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ink))
             isAllCaps = false
             minHeight = 0
             setPadding(18, 0, 18, 0)
