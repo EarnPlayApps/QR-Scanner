@@ -301,7 +301,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun maybeShowInterstitial() {
-        if (scanCount % 10 != 0 || scanCount == 0 || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+        if (scanCount % 5 != 0 || scanCount == 0 || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
         val ad = interstitialAd ?: return
         interstitialAd = null
         runCatching { ad.show(this) }.onFailure { loadInterstitial() }
