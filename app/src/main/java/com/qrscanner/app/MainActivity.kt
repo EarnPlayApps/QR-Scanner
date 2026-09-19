@@ -260,7 +260,18 @@ class MainActivity : AppCompatActivity() {
         open.isEnabled = isWebUrl(value)
         open.alpha = if (open.isEnabled) 1f else .45f
         val dialog = AlertDialog.Builder(this).setView(view).create()
-        dialog.setOnDismissListener { locked = false; scanAgainButton.visibility = View.VISIBLE; maybeShowInterstitial() }
+        dialog.setOnDismissListener {
+            locked = false
+            scanAgainButton.visibility = View.GONE
+            statusText.text = "Kamera sedang disediakan..."
+            window.decorView.postDelayed({
+                if (!isFinishing && !isDestroyed &&
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                    startCamera()
+                }
+            }, 80)
+            maybeShowInterstitial()
+        }
 
         view.findViewById<Button>(R.id.copyButton).setOnClickListener {
             runCatching {
