@@ -23,6 +23,9 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdOptions
 import com.google.android.gms.ads.nativead.NativeAdView
+import com.google.android.gms.ads.rewarded.RewardItem
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -75,6 +78,9 @@ class MainActivity : AppCompatActivity() {
     private var appOpenAd: AppOpenAd? = null
     private var appOpenLoading = false
     private var appOpenShowing = false
+    private var rewardedAd: RewardedAd? = null
+    private var rewardedLoading = false
+    private var freeScanCredits = 0
     private var firstLaunch = true
     private var backgroundAt = 0L
     private var scanningStarted = false
@@ -106,6 +112,7 @@ class MainActivity : AppCompatActivity() {
         loadSettings()
         loadHistory()
         scanCount = prefs.getInt("scan_count", 0)
+        freeScanCredits = prefs.getInt("free_scan_credits", 0)
         languageMs = prefs.getBoolean("language_ms", true)
         applyLanguage()
         setupAds()
@@ -195,6 +202,8 @@ class MainActivity : AppCompatActivity() {
                     }
                     loadInterstitial()
                     loadAppOpenAd()
+                    loadNativeAd()
+                    loadRewardedAd()
                 }
             }
         }
@@ -420,6 +429,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.mainContent).visibility = View.GONE
         findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
         findViewById<View>(R.id.resultScreen).visibility = View.VISIBLE
+        findViewById<View>(R.id.nativeAdContainer).visibility = View.VISIBLE
 
         val resultText = findViewById<TextView>(R.id.resultText)
         val resultType = findViewById<TextView>(R.id.resultType)
@@ -454,7 +464,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        if (autoOpenEnabled && isWebUrl(value)) {
+        runCatching { findViewById<View>(R.id.nativeAdContainer).visibility = View.VISIBLE }
+        runCatching { loadNativeAd() }
+
+        if (autoOpenEnabled && isWebUrl(value))
             window.decorView.postDelayed({
                 if (!isFinishing && !isDestroyed && findViewById<View>(R.id.resultScreen).visibility == View.VISIBLE) {
                     runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value))) }
@@ -469,10 +482,71 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun maybeShowInterstitial() {
+        if (freeScanCredits > 0) {
+            freeScanCredits--
+            prefs.edit().putInt("free_scan_credits", freeScanCredits).apply()
+            return
+        }
         if (scanCount % 5 != 0 || scanCount == 0 || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
         val ad = interstitialAd ?: return
         interstitialAd = null
         runCatching { ad.show(this) }.onFailure { loadInterstitial() }
+    }
+
+    private fun loadRewardedAd() {
+        if (rewardedLoading || rewardedAd != null) return
+        rewardedLoading = true
+        runCatching {
+            RewardedAd.load(
+                this,
+                "ca-app-pub-3940256099942544/5224354917",
+                AdRequest.Builder().build(),
+                object : RewardedAdLoadCallback() {
+                    override fun onAdLoaded(ad: RewardedAd) {
+                        rewardedLoading = false
+                        rewardedAd = ad
+                    }
+                    override fun onAdFailedToLoad(error: LoadAdError) {
+                        rewardedLoading = false
+                        rewardedAd = null
+                    }
+                }
+            )
+        }.onFailure {
+            rewardedLoading = false
+            rewardedAd = null
+        }
+    }
+
+    private fun showRewardedAd() {
+        val ad = rewardedAd
+        if (ad == null) {
+            Toast.makeText(this, t("Iklan ganjaran belum tersedia.", "Rewarded ad is not ready yet."), Toast.LENGTH_SHORT).show()
+            loadRewardedAd()
+            return
+        }
+        rewardedAd = null
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                loadRewardedAd()
+            }
+            override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                loadRewardedAd()
+            }
+        }
+        runCatching {
+            ad.show(this) { _: RewardItem ->
+                freeScanCredits += 10
+                prefs.edit().putInt("free_scan_credits", freeScanCredits).apply()
+                Toast.makeText(
+                    this,
+                    t("Ganjaran diterima: 10 scan tanpa interstitial.", "Reward received: 10 scans without interstitial."),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }.onFailure {
+            loadRewardedAd()
+        }
     }
 
     private fun setCameraZoom(level: Float) {
@@ -488,7 +562,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMoreMenu() {
-        val choices = arrayOf(t("Galeri", "Gallery"), t("Flash", "Flash"), t("Kamera depan / belakang", "Front / rear camera"), t("Scan Lagi", "Scan Again"))
+        val choices = arrayOf(t("Galeri", "Gallery"), t("Flash", "Flash"), t("Kamera depan / belakang", "Front / rear camera"), t("Tonton iklan & dapatkan 10 scan bebas interstitial", "Watch ad & get 10 scans without interstitial"), t("Scan Lagi", "Scan Again"))
         AlertDialog.Builder(this)
             .setTitle(t("Lainnya", "More"))
             .setItems(choices) { _, which ->
@@ -510,7 +584,8 @@ class MainActivity : AppCompatActivity() {
                             .setNegativeButton(t("Batal", "Cancel"), null)
                             .show()
                     }
-                    3 -> startCamera()
+                    3 -> showRewardedAd()
+                    4 -> startCamera()
                 }
             }
             .setNegativeButton(t("Tutup", "Close"), null)
