@@ -20,6 +20,9 @@ import com.google.android.gms.ads.*
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.nativead.NativeAdOptions
+import com.google.android.gms.ads.nativead.NativeAdView
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
@@ -111,8 +114,53 @@ class MainActivity : AppCompatActivity() {
                     runCatching { findViewById<AdView>(R.id.bannerAd).loadAd(AdRequest.Builder().build()) }
                     loadInterstitial()
                     loadAppOpenAd()
+                    loadNativeAd()
                 }
             }
+        }
+    }
+
+    private fun loadNativeAd() {
+        runCatching {
+            val adView = findViewById<NativeAdView>(R.id.nativeAdView)
+            val loader = AdLoader.Builder(this, "ca-app-pub-3940256099942544/2247696110")
+                .forNativeAd { ad: NativeAd ->
+                    if (isFinishing || isDestroyed) {
+                        ad.destroy()
+                        return@forNativeAd
+                    }
+                    adView.mediaView = adView.findViewById(R.id.nativeAdMedia)
+                    adView.headlineView = adView.findViewById(R.id.nativeAdHeadline)
+                    adView.bodyView = adView.findViewById(R.id.nativeAdBody)
+                    adView.callToActionView = adView.findViewById(R.id.nativeAdCallToAction)
+
+                    (adView.headlineView as TextView).text = ad.headline
+
+                    val body = ad.bodyView as TextView
+                    if (ad.body.isNullOrBlank()) {
+                        body.visibility = View.GONE
+                    } else {
+                        body.visibility = View.VISIBLE
+                        body.text = ad.body
+                    }
+
+                    val cta = ad.callToActionView as Button
+                    if (ad.callToAction.isNullOrBlank()) {
+                        cta.visibility = View.GONE
+                    } else {
+                        cta.visibility = View.VISIBLE
+                        cta.text = ad.callToAction
+                    }
+
+                    adView.setNativeAd(ad)
+                }
+                .withNativeAdOptions(
+                    NativeAdOptions.Builder()
+                        .setMediaAspectRatio(NativeAdOptions.NATIVE_MEDIA_ASPECT_RATIO_LANDSCAPE)
+                        .build()
+                )
+                .build()
+            loader.loadAd(AdRequest.Builder().build())
         }
     }
 
