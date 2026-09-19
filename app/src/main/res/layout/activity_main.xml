@@ -22,7 +22,7 @@
         <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:minHeight="190dp"
             android:background="@drawable/bg_round" android:padding="10dp">
             <androidx.camera.view.PreviewView android:id="@+id/preview" android:layout_width="match_parent" android:layout_height="match_parent" app:scaleType="fillCenter"/>
-            <View android:id="@+id/scanFrame" android:layout_width="min(78vw, 230dp)" android:layout_height="min(78vw, 230dp)" android:layout_gravity="center" android:background="@drawable/scan_frame"/>
+            <View android:id="@+id/scanFrame" android:layout_width="210dp" android:layout_height="210dp" android:layout_gravity="center" android:background="@drawable/scan_frame"/>
             <TextView android:id="@+id/cameraMessage" android:text="Letak QR atau barcode dalam bingkai" android:textColor="#FFFFFF" android:textSize="12sp"
                 android:background="#99000000" android:padding="9dp" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="8dp"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"/>
