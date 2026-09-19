@@ -37,3 +37,5 @@ jobs:
         with:
           name: QR-Scanner-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+# Build verification trigger
