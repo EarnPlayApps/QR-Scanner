@@ -393,42 +393,68 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showSettings() {
-        val items = arrayOf(
-            "Bunyi selepas scan",
-            "Getaran selepas scan",
-            "Buka link automatik",
-            "Scan semula automatik",
-            "Simpan sejarah scan"
-        )
-        val checked = booleanArrayOf(soundEnabled, vibrationEnabled, autoOpenEnabled, autoScanEnabled, saveHistoryEnabled)
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(28, 8, 28, 4)
+        }
+
+        fun addSwitch(title: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+            box.addView(Switch(this).apply {
+                text = title
+                isChecked = checked
+                setOnCheckedChangeListener { _, value -> onChange(value); saveSettings() }
+                setPadding(0, 10, 0, 10)
+            })
+        }
+
+        addSwitch("Bunyi selepas scan", soundEnabled) { soundEnabled = it }
+        addSwitch("Getaran selepas scan", vibrationEnabled) { vibrationEnabled = it }
+        addSwitch("Buka link automatik", autoOpenEnabled) { autoOpenEnabled = it }
+        addSwitch("Scan semula automatik", autoScanEnabled) { autoScanEnabled = it }
+        addSwitch("Simpan sejarah scan", saveHistoryEnabled) { saveHistoryEnabled = it }
+
+        val cameraButton = Button(this).apply {
+            text = if (useFrontCamera) "Kamera: Depan" else "Kamera: Belakang"
+            setOnClickListener {
+                val choices = arrayOf("Kamera belakang", "Kamera depan")
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Pilih Kamera")
+                    .setSingleChoiceItems(choices, if (useFrontCamera) 1 else 0) { dialog, which ->
+                        useFrontCamera = which == 1
+                        saveSettings()
+                        text = if (useFrontCamera) "Kamera: Depan" else "Kamera: Belakang"
+                        if (scanningStarted && ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                            startCamera()
+                        }
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton("Batal", null)
+                    .show()
+            }
+        }
+        box.addView(cameraButton)
+
+        val historyButton = Button(this).apply {
+            text = "Padam Semua Sejarah"
+            setOnClickListener {
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Padam Sejarah")
+                    .setMessage("Padam semua rekod scan yang disimpan?")
+                    .setNegativeButton("Batal", null)
+                    .setPositiveButton("Padam") { _, _ ->
+                        history.clear()
+                        saveHistoryToPrefs()
+                        Toast.makeText(this@MainActivity, "Sejarah scan telah dipadam.", Toast.LENGTH_SHORT).show()
+                    }.show()
+            }
+        }
+        box.addView(historyButton)
+
         AlertDialog.Builder(this)
             .setTitle("Tetapan Scanner")
-            .setMultiChoiceItems(items, checked) { _, which, value ->
-                when (which) {
-                    0 -> soundEnabled = value
-                    1 -> vibrationEnabled = value
-                    2 -> autoOpenEnabled = value
-                    3 -> autoScanEnabled = value
-                    4 -> saveHistoryEnabled = value
-                }
-                saveSettings()
-            }
-            .setSingleChoiceItems(arrayOf("Kamera belakang", "Kamera depan"), if (useFrontCamera) 1 else 0) { dialog, which ->
-                val changed = useFrontCamera != (which == 1)
-                useFrontCamera = which == 1
-                saveSettings()
-                if (changed && scanningStarted && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                    dialog.dismiss()
-                    startCamera()
-                }
-            }
+            .setView(box)
             .setPositiveButton("Selesai", null)
-            .setNeutralButton("Padam Semua Sejarah") { _, _ ->
-                history.clear()
-                saveHistoryToPrefs()
-                Toast.makeText(this, "Sejarah scan telah dipadam.", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Privasi & Tentang") { _, _ -> showPrivacyPolicy() }
+            .setNeutralButton("Privasi & Tentang") { _, _ -> showPrivacyPolicy() }
             .show()
     }
 
