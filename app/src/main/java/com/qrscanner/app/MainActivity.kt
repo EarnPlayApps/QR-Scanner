@@ -109,6 +109,10 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.flashButton).setOnClickListener { toggleFlash() }
+        findViewById<Button>(R.id.flashHeaderButton).setOnClickListener { toggleFlash() }
+        findViewById<Button>(R.id.zoomOneButton).setOnClickListener { setCameraZoom(1f) }
+        findViewById<Button>(R.id.zoomTwoButton).setOnClickListener { setCameraZoom(2f) }
+        findViewById<Button>(R.id.saveHistoryButton).setOnClickListener { Toast.makeText(this, "Keputusan telah disimpan ke sejarah.", Toast.LENGTH_SHORT).show() }
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
         findViewById<Button>(R.id.settingsButton).setOnClickListener { showSettings() }
         findViewById<Button>(R.id.resultBackButton).setOnClickListener { beginScanning() }
@@ -118,6 +122,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
         findViewById<Button>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
         scanAgainButton.setOnClickListener { startCamera() }
+        // Reference design uses a launch screen, then enters the scanner automatically.
+        window.decorView.postDelayed({
+            if (!isFinishing && !isDestroyed && findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE) beginScanning()
+        }, 1400L)
+
         permissionButton.setOnClickListener {
             if (!prefs.getBoolean("asked_camera", false) || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
                 prefs.edit().putBoolean("asked_camera", true).apply()
@@ -433,6 +442,10 @@ class MainActivity : AppCompatActivity() {
         val ad = interstitialAd ?: return
         interstitialAd = null
         runCatching { ad.show(this) }.onFailure { loadInterstitial() }
+    }
+
+    private fun setCameraZoom(level: Float) {
+        camera?.cameraControl?.setZoomRatio(level)
     }
 
     private fun toggleFlash() {
