@@ -1,0 +1,54 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@color/surface"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/resultType"
+        android:text="QR RESULT"
+        android:textStyle="bold"
+        android:textSize="12sp"
+        android:textColor="@color/primary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/resultText"
+        android:textSize="17sp"
+        android:textColor="@color/ink"
+        android:layout_marginTop="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/copyButton"
+            android:text="Copy"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="50dp"/>
+
+        <Space android:layout_width="10dp" android:layout_height="1dp"/>
+
+        <Button
+            android:id="@+id/openButton"
+            android:text="Open"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="50dp"/>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/shareButton"
+        android:text="Share"
+        android:layout_marginTop="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"/>
+</LinearLayout>
