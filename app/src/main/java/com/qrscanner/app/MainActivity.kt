@@ -131,8 +131,8 @@ class MainActivity : AppCompatActivity() {
                     }
                     adView.mediaView = adView.findViewById(R.id.nativeAdMedia)
                     adView.headlineView = adView.findViewById(R.id.nativeAdHeadline)
-                    adView.bodyView = adView.findViewById(R.id.nativeAdBody)
-                    adView.callToActionView = adView.findViewById(R.id.nativeAdCallToAction)
+                    adView.setBodyView(adView.findViewById(R.id.nativeAdBody))
+                    adView.setCallToActionView(adView.findViewById(R.id.nativeAdCallToAction))
 
                     (adView.headlineView as TextView).text = ad.headline
 
