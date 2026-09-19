@@ -19,7 +19,8 @@
                 android:paddingStart="16dp" android:paddingEnd="16dp" android:layout_width="wrap_content" android:layout_height="42dp"/>
         </LinearLayout>
 
-        <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:minHeight="190dp"
+        <!-- Compact camera preview: intentionally fixed-height, not full-screen. -->
+        <FrameLayout android:layout_width="match_parent" android:layout_height="290dp"
             android:background="@drawable/bg_round" android:padding="10dp">
             <androidx.camera.view.PreviewView android:id="@+id/preview" android:layout_width="match_parent" android:layout_height="match_parent" app:scaleType="fillCenter"/>
             <View android:id="@+id/scanFrame" android:layout_width="210dp" android:layout_height="210dp" android:layout_gravity="center" android:background="@drawable/scan_frame"/>
