@@ -57,6 +57,7 @@
             android:layout_marginTop="2dp"
             android:gravity="center"
             android:letterSpacing="0.12"
+            android:id="@+id/welcomeSubtitle"
             android:text="Scan Anything, Anytime"
             android:textColor="@color/muted"
             android:textSize="14sp"/>
@@ -116,6 +117,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="28dp"
             android:gravity="center"
+            android:id="@+id/welcomeTagline"
             android:text="Scan a Smarter World"
             android:textColor="@color/muted"
             android:textSize="18sp"
@@ -475,6 +477,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
+                    android:id="@+id/resultTitle"
                     android:text="Hasil Scan"
                     android:textColor="@color/ink"
                     android:textSize="20sp"
