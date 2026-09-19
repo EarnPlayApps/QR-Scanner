@@ -128,6 +128,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupAds() {
+        runCatching {
+            MobileAds.initialize(this) {
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    findViewById<com.google.android.gms.ads.AdView>(R.id.bannerAd)
+                        .loadAd(AdRequest.Builder().build())
+                    loadInterstitial()
+                    loadAppOpenAd()
+                }
+            }
+        }.onFailure {
+            // Ads must never be allowed to crash the scanner.
+        }
+    }
         Thread {
             MobileAds.initialize(this) {
                 runOnUiThread {
@@ -209,10 +223,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun maybeShowInterstitial() {
-        if (scanCount > 0 && scanCount % 10 == 0) {
+        if (scanCount > 0 && scanCount % 10 == 0 &&
+            lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
             interstitialAd?.let { ad ->
                 interstitialAd = null
-                ad.show(this)
+                runCatching { ad.show(this) }
+                    .onFailure { loadInterstitial() }
             }
         }
     }
@@ -233,23 +249,46 @@ class MainActivity : AppCompatActivity() {
                     .build()
 
                 analysis.setAnalyzer(executor) { proxy ->
-                    if (locked || proxy.image == null) {
+                    if (locked || proxy.image == null || isFinishing || isDestroyed) {
                         proxy.close()
                         return@setAnalyzer
                     }
-                    val input = InputImage.fromMediaImage(proxy.image!!, proxy.imageInfo.rotationDegrees)
-                    scanner.process(input)
-                        .addOnSuccessListener { codes ->
-                            val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() }
-                            if (first != null && !locked) {
-                                locked = true
-                                val value = first.rawValue!!
-                                val format = formatName(first.format)
-                                saveHistory(value, format)
-                                runOnUiThread { handleFoundResult(value, format) }
+                    val mediaImage = proxy.image ?: run {
+                        proxy.close()
+                        return@setAnalyzer
+                    }
+                    val input = runCatching {
+                        InputImage.fromMediaImage(mediaImage, proxy.imageInfo.rotationDegrees)
+                    }.getOrNull() ?: run {
+                        proxy.close()
+                        return@setAnalyzer
+                    }
+
+                    runCatching {
+                        scanner.process(input)
+                            .addOnSuccessListener { codes ->
+                                val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() }
+                                if (first != null && !locked && !isFinishing && !isDestroyed) {
+                                    locked = true
+                                    val value = first.rawValue.orEmpty()
+                                    val format = formatName(first.format)
+                                    runOnUiThread {
+                                        if (isFinishing || isDestroyed) return@runOnUiThread
+                                        runCatching {
+                                            saveHistory(value, format)
+                                            handleFoundResult(value, format)
+                                        }.onFailure {
+                                            locked = false
+                                            Toast.makeText(this, "Keputusan scan tidak dapat dipaparkan.", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
                             }
-                        }
-                        .addOnCompleteListener { proxy.close() }
+                            .addOnFailureListener { }
+                            .addOnCompleteListener { runCatching { proxy.close() } }
+                    }.onFailure {
+                        runCatching { proxy.close() }
+                    }
                 }
 
                 p.unbindAll()
@@ -263,6 +302,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleFoundResult(value: String, format: String) {
+        if (isFinishing || isDestroyed) return
         if (soundEnabled) {
             ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80).apply {
                 startTone(ToneGenerator.TONE_PROP_BEEP, 120)
@@ -339,6 +379,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showResult(value: String, format: String) {
+        if (isFinishing || isDestroyed) return
         val view = layoutInflater.inflate(R.layout.dialog_result, null)
         view.findViewById<TextView>(R.id.resultText).text = value
         view.findViewById<TextView>(R.id.resultType).text = "SCAN RESULT • $format"
@@ -584,6 +625,9 @@ class MainActivity : AppCompatActivity() {
         lastBackgroundAt = System.currentTimeMillis()
         camera?.cameraControl?.enableTorch(false)
         torchOn = false
+        runCatching { provider?.unbindAll() }
+        provider = null
+        camera = null
     }
 
     override fun onDestroy() {
