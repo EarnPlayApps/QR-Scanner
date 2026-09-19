@@ -1,8 +1,11 @@
 <resources>
-    <color name="bg">#F6F8FC</color>
+    <color name="bg">#FFFDFC</color>
     <color name="surface">#FFFFFF</color>
-    <color name="ink">#152033</color>
-    <color name="muted">#718096</color>
-    <color name="primary">#315CFF</color>
-    <color name="line">#E5EAF2</color>
+    <color name="ink">#111111</color>
+    <color name="muted">#68707A</color>
+    <color name="orange">#FF6A00</color>
+    <color name="orange_dark">#E95700</color>
+    <color name="line">#E9E9E9</color>
+    <color name="white">#FFFFFF</color>
+    <color name="camera_dark">#151515</color>
 </resources>
