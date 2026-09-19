@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private var appOpenShowing = false
     private var firstLaunch = true
     private var backgroundAt = 0L
+    private var scanningStarted = false
     private val history = mutableListOf<HistoryItem>()
     data class HistoryItem(val value: String, val meta: String)
 
@@ -83,6 +84,7 @@ class MainActivity : AppCompatActivity() {
         scanCount = prefs.getInt("scan_count", 0)
         setupAds()
 
+        findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.flashButton).setOnClickListener { toggleFlash() }
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
         findViewById<Button>(R.id.historyButton).setOnClickListener { showHistory() }
@@ -97,6 +99,13 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    }
+
+    private fun beginScanning() {
+        if (isFinishing || isDestroyed) return
+        scanningStarted = true
+        findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
+        findViewById<View>(R.id.mainContent).visibility = View.VISIBLE
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             permissionButton.visibility = View.GONE
             startCamera()
@@ -131,10 +140,16 @@ class MainActivity : AppCompatActivity() {
                     }
                     adView.mediaView = adView.findViewById(R.id.nativeAdMedia)
                     adView.headlineView = adView.findViewById(R.id.nativeAdHeadline)
+                    adView.setIconView(adView.findViewById(R.id.nativeAdIcon))
+                    adView.setAdvertiserView(adView.findViewById(R.id.nativeAdAdvertiser))
                     adView.setBodyView(adView.findViewById(R.id.nativeAdBody))
                     adView.setCallToActionView(adView.findViewById(R.id.nativeAdCallToAction))
 
                     (adView.headlineView as TextView).text = ad.headline
+                    val icon = adView.findViewById<ImageView>(R.id.nativeAdIcon)
+                    if (ad.icon?.drawable != null) { icon.setImageDrawable(ad.icon?.drawable); icon.visibility = View.VISIBLE } else icon.visibility = View.GONE
+                    val advertiser = adView.findViewById<TextView>(R.id.nativeAdAdvertiser)
+                    if (ad.advertiser.isNullOrBlank()) { advertiser.visibility = View.GONE } else { advertiser.visibility = View.VISIBLE; advertiser.text = ad.advertiser }
 
                     val body = adView.findViewById<TextView>(R.id.nativeAdBody)
                     if (ad.body.isNullOrBlank()) {
@@ -430,7 +445,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (!firstLaunch && backgroundAt > 0 && System.currentTimeMillis() - backgroundAt > 60000) showAppOpenIfReady()
         firstLaunch = false
-        if (::preview.isInitialized && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED && provider == null) startCamera()
+        if (::preview.isInitialized && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED && scanningStarted && provider == null) startCamera()
     }
     override fun onPause() {
         super.onPause()
