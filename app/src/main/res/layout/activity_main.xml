@@ -13,25 +13,25 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center_horizontal"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp"
-        android:paddingTop="58dp"
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp"
+        android:paddingTop="42dp"
         android:paddingBottom="18dp"
-        android:background="@color/bg">
+        android:background="@drawable/bg_welcome">
 
-        <Space android:layout_width="1dp" android:layout_height="22dp"/>
+        <Space android:layout_width="1dp" android:layout_height="10dp"/>
 
         <ImageView
             android:id="@+id/welcomeLogo"
-            android:layout_width="210dp"
-            android:layout_height="210dp"
+            android:layout_width="154dp"
+            android:layout_height="154dp"
             android:src="@drawable/ic_scanner_logo"
             android:contentDescription="QR Scanner"/>
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="18dp"
             android:orientation="horizontal">
 
             <TextView
@@ -39,7 +39,7 @@
                 android:layout_height="wrap_content"
                 android:text="QR"
                 android:textColor="@color/orange"
-                android:textSize="38sp"
+                android:textSize="39sp"
                 android:textStyle="bold"/>
 
             <TextView
@@ -64,7 +64,7 @@
         <ProgressBar
             android:layout_width="230dp"
             android:layout_height="8dp"
-            android:layout_marginTop="46dp"
+            android:layout_marginTop="58dp"
             android:indeterminate="false"
             android:max="100"
             android:progress="72"
@@ -75,46 +75,29 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
+            android:layout_marginTop="50dp"
             android:gravity="center"
             android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="QR Code"
-                android:textColor="@color/ink"
-                android:textSize="11sp"/>
-
-            <View android:layout_width="1dp" android:layout_height="22dp" android:background="@color/line"/>
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="Barcode"
-                android:textColor="@color/ink"
-                android:textSize="11sp"/>
-
-            <View android:layout_width="1dp" android:layout_height="22dp" android:background="@color/line"/>
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="and More"
-                android:textColor="@color/ink"
-                android:textSize="11sp"/>
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_qr_small" android:contentDescription="QR Code"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="QR Code" android:textColor="@color/ink" android:textSize="11sp"/>
+            </LinearLayout>
+            <View android:layout_width="1dp" android:layout_height="38dp" android:background="@color/line"/>
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_barcode" android:contentDescription="Barcode"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Barcode" android:textColor="@color/ink" android:textSize="11sp"/>
+            </LinearLayout>
+            <View android:layout_width="1dp" android:layout_height="38dp" android:background="@color/line"/>
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_document" android:contentDescription="and More"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="and More" android:textColor="@color/ink" android:textSize="11sp"/>
+            </LinearLayout>
         </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="34dp"
             android:gravity="center"
             android:text="Scan a Smarter World"
             android:textColor="@color/muted"
@@ -136,7 +119,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="@color/bg"
+        android:background="@drawable/bg_welcome"
         android:visibility="gone">
 
         <LinearLayout
@@ -146,16 +129,7 @@
             android:paddingStart="14dp"
             android:paddingEnd="14dp">
 
-            <Button
-                android:id="@+id/settingsButton"
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:text="≡"
-                android:textSize="28sp"
-                android:textColor="@color/ink"
-                android:background="@android:color/transparent"/>
+            <ImageButton android:id="@+id/settingsButton" android:layout_width="44dp" android:layout_height="44dp" android:padding="10dp" android:src="@drawable/ic_menu" android:tint="@color/ink" android:background="@android:color/transparent" android:contentDescription="Menu"/>
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -181,16 +155,7 @@
                     android:textStyle="bold"/>
             </LinearLayout>
 
-            <Button
-                android:id="@+id/flashHeaderButton"
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:text="⚡"
-                android:textSize="23sp"
-                android:textColor="@color/ink"
-                android:background="@android:color/transparent"/>
+            <ImageButton android:id="@+id/flashHeaderButton" android:layout_width="44dp" android:layout_height="44dp" android:padding="10dp" android:src="@drawable/ic_flash" android:tint="@color/ink" android:background="@android:color/transparent" android:contentDescription="Flash"/>
 
         </LinearLayout>
 
@@ -218,8 +183,8 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|center_horizontal"
                 android:layout_marginTop="28dp"
-                android:background="@drawable/bg_hint"
-                android:paddingStart="18dp"
+                android:background="@drawable/bg_camera_hint"
+                android:paddingStart="20dp"
                 android:paddingEnd="18dp"
                 android:paddingTop="9dp"
                 android:paddingBottom="9dp"
@@ -235,8 +200,8 @@
 
                 <View
                     android:id="@+id/scanFrame"
-                    android:layout_width="280dp"
-                    android:layout_height="280dp"
+                    android:layout_width="286dp"
+                    android:layout_height="286dp"
                     android:layout_gravity="center"
                     android:background="@drawable/scan_frame"/>
 
@@ -290,16 +255,7 @@
                 android:gravity="center"
                 android:orientation="vertical">
 
-                <Button
-                    android:id="@+id/flashButton"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:minWidth="0dp"
-                    android:minHeight="0dp"
-                    android:text="▣"
-                    android:textColor="@color/white"
-                    android:textSize="22sp"
-                    android:background="@drawable/bg_hint"/>
+                <ImageButton android:id="@+id/flashButton" android:layout_width="56dp" android:layout_height="56dp" android:padding="16dp" android:src="@drawable/ic_flash" android:tint="@color/white" android:background="@drawable/bg_control" android:contentDescription="Flash"/>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -309,17 +265,7 @@
                     android:textSize="12sp"/>
             </LinearLayout>
 
-            <Button
-                android:id="@+id/scanAgainButton"
-                android:layout_width="78dp"
-                android:layout_height="78dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:text="SCAN"
-                android:textColor="@color/white"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:background="@drawable/bg_primary"/>
+            <ImageButton android:id="@+id/scanAgainButton" android:layout_width="76dp" android:layout_height="76dp" android:padding="21dp" android:src="@drawable/ic_scan" android:tint="@color/white" android:background="@drawable/bg_scan_button" android:contentDescription="Scan"/>
 
             <LinearLayout
                 android:layout_width="82dp"
@@ -327,16 +273,7 @@
                 android:gravity="center"
                 android:orientation="vertical">
 
-                <Button
-                    android:id="@+id/galleryButton"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:minWidth="0dp"
-                    android:minHeight="0dp"
-                    android:text="▧"
-                    android:textColor="@color/white"
-                    android:textSize="22sp"
-                    android:background="@drawable/bg_hint"/>
+                <ImageButton android:id="@+id/galleryButton" android:layout_width="56dp" android:layout_height="56dp" android:padding="16dp" android:src="@drawable/ic_gallery" android:tint="@color/white" android:background="@drawable/bg_control" android:contentDescription="Galeri"/>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -378,32 +315,16 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="66dp"
+            android:layout_height="68dp"
             android:background="@color/surface"
             android:gravity="center"
             android:orientation="horizontal"
             android:elevation="8dp">
 
-            <Button
-                android:id="@+id/bottomScanButton"
-                style="@style/BottomNavButton"
-                android:text="⌂"
-                android:textColor="@color/orange"/>
-
-            <Button
-                android:id="@+id/bottomHistoryButton"
-                style="@style/BottomNavButton"
-                android:text="◷"/>
-
-            <Button
-                android:id="@+id/bottomSettingsButton"
-                style="@style/BottomNavButton"
-                android:text="⚙"/>
-
-            <Button
-                android:id="@+id/bottomMoreButton"
-                style="@style/BottomNavButton"
-                android:text="☷"/>
+            <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:orientation="vertical"><ImageButton android:id="@+id/bottomScanButton" android:layout_width="28dp" android:layout_height="28dp" android:padding="3dp" android:src="@drawable/ic_home" android:tint="@color/orange" android:background="@android:color/transparent" android:contentDescription="Scan"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Scan" android:textColor="@color/orange" android:textSize="11sp" android:textStyle="bold"/></LinearLayout>
+            <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:orientation="vertical"><ImageButton android:id="@+id/bottomHistoryButton" android:layout_width="28dp" android:layout_height="28dp" android:padding="3dp" android:src="@drawable/ic_clock" android:tint="@color/ink" android:background="@android:color/transparent" android:contentDescription="Sejarah"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sejarah" android:textColor="@color/ink" android:textSize="11sp"/></LinearLayout>
+            <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:orientation="vertical"><ImageButton android:id="@+id/bottomSettingsButton" android:layout_width="28dp" android:layout_height="28dp" android:padding="3dp" android:src="@drawable/ic_settings" android:tint="@color/ink" android:background="@android:color/transparent" android:contentDescription="Tetapan"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tetapan" android:textColor="@color/ink" android:textSize="11sp"/></LinearLayout>
+            <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:orientation="vertical"><ImageButton android:id="@+id/bottomMoreButton" android:layout_width="28dp" android:layout_height="28dp" android:padding="3dp" android:src="@drawable/ic_more" android:tint="@color/ink" android:background="@android:color/transparent" android:contentDescription="Lainnya"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Lainnya" android:textColor="@color/ink" android:textSize="11sp"/></LinearLayout>
 
         </LinearLayout>
     </LinearLayout>
@@ -437,9 +358,8 @@
                     android:layout_height="44dp"
                     android:minWidth="0dp"
                     android:minHeight="0dp"
-                    android:text="‹"
-                    android:textSize="28sp"
-                    android:textColor="@color/ink"
+                    android:src="@drawable/ic_back"
+                    android:tint="@color/ink"
                     android:background="@android:color/transparent"/>
 
                 <TextView
@@ -469,11 +389,10 @@
                     android:layout_width="64dp"
                     android:layout_height="64dp"
                     android:gravity="center"
-                    android:text="↗"
-                    android:textColor="@color/white"
-                    android:textSize="34sp"
-                    android:textStyle="bold"
-                    android:background="@drawable/bg_primary"/>
+                    android:src="@drawable/ic_link"
+                    android:tint="@color/white"
+                    android:padding="16dp"
+                    android:background="@drawable/bg_scan_button"/>
 
                 <TextView
                     android:id="@+id/resultType"
