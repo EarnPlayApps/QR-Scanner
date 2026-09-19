@@ -305,7 +305,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showHistory() {
-        if (history.isEmpty()) {\n            AlertDialog.Builder(this).setTitle("Sejarah Scan").setMessage("Belum ada QR atau barcode yang diimbas.").setPositiveButton("OK", null).show()\n            return\n        }
+        if (history.isEmpty()) {
+            AlertDialog.Builder(this).setTitle("Sejarah Scan").setMessage("Belum ada QR atau barcode yang diimbas.").setPositiveButton("OK", null).show()
+            return
+        }
         val text = history.joinToString("\n\n") { it.value + "\n" + it.meta }
         AlertDialog.Builder(this).setTitle("Sejarah Scan").setMessage(text).setPositiveButton("Tutup", null)
             .setNeutralButton("Padam Semua") { _, _ -> history.clear(); saveHistoryToPrefs() }.show()
