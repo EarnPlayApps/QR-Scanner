@@ -232,7 +232,7 @@ class MainActivity : AppCompatActivity() {
                     .build()
 
                 analysis.setAnalyzer(executor) { proxy ->
-                    if (locked || isFinishing || isDestroyed) { proxy.close(); return@setAnalyzer }
+                    if (locked || isFinishing || isDestroyed) { runCatching { proxy.close() }; return@setAnalyzer }
                     val image = proxy.image
                     if (image == null) { proxy.close(); return@setAnalyzer }
                     val input = runCatching { InputImage.fromMediaImage(image, proxy.imageInfo.rotationDegrees) }.getOrNull()
@@ -244,7 +244,14 @@ class MainActivity : AppCompatActivity() {
                             locked = true
                             val value = first.rawValue.orEmpty()
                             val format = formatName(first.format)
-                            runOnUiThread { showScanResult(value, format) }
+                            if (isFinishing || isDestroyed) {
+                                locked = false
+                                return@addOnSuccessListener
+                            }
+                            runOnUiThread {
+                                if (!isFinishing && !isDestroyed) showScanResult(value, format)
+                                else locked = false
+                            }
                         }
                         .addOnCompleteListener { runCatching { proxy.close() } }
                 }
@@ -549,6 +556,7 @@ class MainActivity : AppCompatActivity() {
         runCatching { provider?.unbindAll() }
         provider = null
         camera = null
+        locked = false
         torchOn = false
     }
     override fun onDestroy() {
