@@ -182,7 +182,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
         findViewById<View>(R.id.resultScreen).visibility = View.GONE
         findViewById<View>(R.id.mainContent).visibility = View.VISIBLE
-        findViewById<AdView>(R.id.bannerAd).visibility = View.GONE
+        findViewById<AdView>(R.id.bannerAd).visibility = View.VISIBLE
         findViewById<View>(R.id.nativeAdContainer).visibility = View.GONE
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             permissionButton.visibility = View.GONE
@@ -433,6 +433,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.resultScreen).visibility = View.VISIBLE
         findViewById<View>(R.id.nativeAdContainer).visibility = View.VISIBLE
         findViewById<AdView>(R.id.resultBannerAd).visibility = View.VISIBLE
+        findViewById<AdView>(R.id.bannerAd).visibility = View.GONE
 
         val resultText = findViewById<TextView>(R.id.resultText)
         val resultType = findViewById<TextView>(R.id.resultType)
