@@ -282,6 +282,7 @@
                 <ImageButton android:id="@+id/flashButton" android:layout_width="56dp" android:layout_height="56dp" android:padding="16dp" android:src="@drawable/ic_flash" android:tint="@color/white" android:background="@drawable/bg_control" android:contentDescription="Flash"/>
 
                 <TextView
+                    android:id="@+id/flashLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Flash"
@@ -300,6 +301,7 @@
                 <ImageButton android:id="@+id/galleryButton" android:layout_width="56dp" android:layout_height="56dp" android:padding="16dp" android:src="@drawable/ic_gallery" android:tint="@color/white" android:background="@drawable/bg_control" android:contentDescription="Galeri"/>
 
                 <TextView
+                    android:id="@+id/galleryLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Galeri"
