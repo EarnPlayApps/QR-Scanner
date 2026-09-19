@@ -70,7 +70,6 @@ class MainActivity : AppCompatActivity() {
     private var saveHistoryEnabled = true
     private var useFrontCamera = false
     private var scanCount = 0
-    private var languageMs = true
     private var interstitialAd: InterstitialAd? = null
     private var appOpenAd: AppOpenAd? = null
     private var appOpenLoading = false
@@ -106,8 +105,6 @@ class MainActivity : AppCompatActivity() {
         loadSettings()
         loadHistory()
         scanCount = prefs.getInt("scan_count", 0)
-        languageMs = prefs.getBoolean("language_ms", true)
-        applyLanguage()
         setupAds()
 
         findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
@@ -118,7 +115,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.saveHistoryButton).setOnClickListener { Toast.makeText(this, "Keputusan telah disimpan ke sejarah.", Toast.LENGTH_SHORT).show() }
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
         findViewById<Button>(R.id.settingsButton).setOnClickListener { showSettings() }
-        findViewById<ImageButton>(R.id.resultBackButton).setOnClickListener { beginScanning() }
+        findViewById<Button>(R.id.resultBackButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
@@ -139,31 +136,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-    }
-
-    private fun toggleLanguage() {
-        languageMs = !languageMs
-        prefs.edit().putBoolean("language_ms", languageMs).apply()
-        applyLanguage()
-    }
-
-    private fun applyLanguage() {
-        findViewById<TextView>(R.id.languageButton).text = if (languageMs) "BM" else "EN"
-        findViewById<TextView>(R.id.featureMoreLabel).text = if (languageMs) "dan Lagi" else "and More"
-        findViewById<TextView>(R.id.welcomeTagline).text = if (languageMs) "Imbas Dunia Dengan Lebih Bijak" else "Scan a Smarter World"
-        findViewById<TextView>(R.id.cameraMessage).text = if (languageMs) "Halakan QR / barcode ke ruang ini" else "Point a QR / barcode into this area"
-        findViewById<TextView>(R.id.flashLabel).text = if (languageMs) "Lampu" else "Flash"
-        findViewById<TextView>(R.id.galleryLabel).text = if (languageMs) "Galeri" else "Gallery"
-        findViewById<TextView>(R.id.bottomHistoryLabel).text = if (languageMs) "Sejarah" else "History"
-        findViewById<TextView>(R.id.bottomSettingsLabel).text = if (languageMs) "Tetapan" else "Settings"
-        findViewById<TextView>(R.id.bottomMoreLabel).text = if (languageMs) "Lainnya" else "More"
-        findViewById<TextView>(R.id.resultTitle).text = if (languageMs) "Hasil Scan" else "Scan Result"
-        findViewById<TextView>(R.id.resultInfoTitle).text = if (languageMs) "Maklumat" else "Information"
-        findViewById<Button>(R.id.openButton).text = if (languageMs) "Buka Link" else "Open Link"
-        findViewById<Button>(R.id.copyButton).text = if (languageMs) "Salin" else "Copy"
-        findViewById<Button>(R.id.shareButton).text = if (languageMs) "Kongsi" else "Share"
-        findViewById<Button>(R.id.saveHistoryButton).text = if (languageMs) "Simpan" else "Save"
-        findViewById<Button>(R.id.resultScanAgainButton).text = if (languageMs) "Scan Lagi" else "Scan Again"
     }
 
     private fun beginScanning() {
