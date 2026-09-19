@@ -281,15 +281,30 @@ class MainActivity : AppCompatActivity() {
 
     private fun feedback() {
         if (soundEnabled) runCatching {
-            ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80).apply {
-                startTone(ToneGenerator.TONE_PROP_BEEP, 120)
-                release()
-            }
+            val tone = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+            tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 180)
+            window.decorView.postDelayed({ runCatching { tone.release() } }, 220)
         }
         if (vibrationEnabled) runCatching {
-            val v = getSystemService(VIBRATOR_SERVICE) as Vibrator
-            if (Build.VERSION.SDK_INT >= 26) v.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-            else { @Suppress("DEPRECATION") v.vibrate(100) }
+            if (Build.VERSION.SDK_INT >= 31) {
+                val manager = getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                val vibrator = manager.defaultVibrator
+                if (vibrator.hasVibrator()) {
+                    vibrator.vibrate(
+                        VibrationEffect.createOneShot(140L, VibrationEffect.DEFAULT_AMPLITUDE)
+                    )
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+                if (vibrator.hasVibrator()) {
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        vibrator.vibrate(VibrationEffect.createOneShot(140L, VibrationEffect.DEFAULT_AMPLITUDE))
+                    } else {
+                        vibrator.vibrate(140L)
+                    }
+                }
+            }
         }
     }
 
@@ -415,6 +430,11 @@ class MainActivity : AppCompatActivity() {
 
         val cameraButton = Button(this).apply {
             text = if (useFrontCamera) "Kamera: Depan" else "Kamera: Belakang"
+            background = ContextCompat.getDrawable(this@MainActivity, R.drawable/bg_secondary)
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ink))
+            isAllCaps = false
+            minHeight = 0
+            setPadding(18, 0, 18, 0)
             setOnClickListener {
                 val choices = arrayOf("Kamera belakang", "Kamera depan")
                 AlertDialog.Builder(this@MainActivity)
@@ -432,10 +452,22 @@ class MainActivity : AppCompatActivity() {
                     .show()
             }
         }
+        val cameraSpace = Space(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                10
+            )
+        }
         box.addView(cameraButton)
+        box.addView(cameraSpace)
 
         val historyButton = Button(this).apply {
             text = "Padam Semua Sejarah"
+            background = ContextCompat.getDrawable(this@MainActivity, R.drawable/bg_secondary)
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ink))
+            isAllCaps = false
+            minHeight = 0
+            setPadding(18, 0, 18, 0)
             setOnClickListener {
                 AlertDialog.Builder(this@MainActivity)
                     .setTitle("Padam Sejarah")
