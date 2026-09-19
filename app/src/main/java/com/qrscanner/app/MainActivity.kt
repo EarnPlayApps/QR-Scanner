@@ -125,6 +125,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
         findViewById<ImageButton>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
         scanAgainButton.setOnClickListener { startCamera() }
+        window.decorView.postDelayed({
+            if (!isFinishing && !isDestroyed && findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE) beginScanning()
+        }, 1400L)
         permissionButton.setOnClickListener {
             if (!prefs.getBoolean("asked_camera", false) || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
                 prefs.edit().putBoolean("asked_camera", true).apply()
