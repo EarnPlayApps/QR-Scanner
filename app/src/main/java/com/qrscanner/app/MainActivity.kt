@@ -87,7 +87,7 @@ class MainActivity : AppCompatActivity() {
             preview.post { startCamera() }
         } else {
             permissionButton.visibility = View.VISIBLE
-            statusText.text = t("Kebenaran kamera diperlukan untuk scan melalui kamera.", "Camera permission is required to scan.")
+            statusText.text = "Kebenaran kamera diperlukan untuk scan melalui kamera."
         }
     }
 
@@ -337,7 +337,7 @@ class MainActivity : AppCompatActivity() {
                 camera = p.bindToLifecycle(this, selector, previewUseCase, analysis)
             } catch (e: Exception) {
                 permissionButton.visibility = View.VISIBLE
-                statusText.text = t("Kamera gagal dimulakan.", "Camera could not be started.")
+                statusText.text = "Kamera gagal dimulakan."
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -394,26 +394,26 @@ class MainActivity : AppCompatActivity() {
     private fun scanImage(uri: Uri) {
         if (isFinishing || isDestroyed) return
         runCatching { provider?.unbindAll(); provider = null; camera = null }.onFailure { }
-        statusText.text = t("Mengimbas gambar...", "Scanning image...")
+        statusText.text = "Mengimbas gambar..."
         val input = runCatching { InputImage.fromFilePath(this, uri) }.getOrNull()
         if (input == null) {
-            statusText.text = t("Gambar tidak dapat dibuka.", "Image could not be opened.")
-            Toast.makeText(this, t("Gambar tidak dapat dibuka.", "Image could not be opened."), Toast.LENGTH_SHORT).show()
+            statusText.text = "Gambar tidak dapat dibuka."
+            Toast.makeText(this, "Gambar tidak dapat dibuka.", Toast.LENGTH_SHORT).show()
             return
         }
         scanner.process(input)
             .addOnSuccessListener { codes ->
                 val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() }
                 if (first == null) {
-                    statusText.text = t("Tiada QR/barcode ditemui.", "No QR/barcode found.")
-                    Toast.makeText(this, t("Tiada QR/barcode ditemui dalam gambar.", "No QR/barcode was found in the image."), Toast.LENGTH_SHORT).show()
+                    statusText.text = "Tiada QR/barcode ditemui."
+                    Toast.makeText(this, "Tiada QR/barcode ditemui dalam gambar.", Toast.LENGTH_SHORT).show()
                 } else {
                     runOnUiThread { showScanResult(first.rawValue.orEmpty(), formatName(first.format)) }
                 }
             }
             .addOnFailureListener {
-                statusText.text = t("Gagal mengimbas gambar.", "Failed to scan image.")
-                Toast.makeText(this, t("Gambar tidak dapat diimbas.", "Image could not be scanned."), Toast.LENGTH_SHORT).show()
+                statusText.text = "Gagal mengimbas gambar."
+                Toast.makeText(this, "Gambar tidak dapat diimbas.", Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -484,25 +484,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun toggleFlash() {
-        val c = camera ?: return Toast.makeText(this, t("Mula kamera dahulu.", "Start the camera first."), Toast.LENGTH_SHORT).show()
-        if (!c.cameraInfo.hasFlashUnit()) return Toast.makeText(this, t("Telefon ini tiada flashlight kamera.", "This phone has no camera flash."), Toast.LENGTH_SHORT).show()
+        val c = camera ?: return Toast.makeText(this, "Mula kamera dahulu.", Toast.LENGTH_SHORT).show()
+        if (!c.cameraInfo.hasFlashUnit()) return Toast.makeText(this, "Telefon ini tiada flashlight kamera.", Toast.LENGTH_SHORT).show()
         torchOn = !torchOn
         runCatching { c.cameraControl.enableTorch(torchOn) }
         findViewById<ImageButton>(R.id.flashButton).alpha = if (torchOn) 1f else 0.82f
     }
 
     private fun showMoreMenu() {
-        val choices = arrayOf(t("Galeri", "Gallery"), t("Lampu", "Flash"), t("Kamera depan / belakang", "Front / rear camera"), t("Scan Lagi", "Scan Again"))
+        val choices = arrayOf("Galeri", "Flash", "Kamera depan / belakang", "Scan Lagi")
         AlertDialog.Builder(this)
-            .setTitle(t("Lainnya", "More"))
+            .setTitle("Lainnya")
             .setItems(choices) { _, which ->
                 when (which) {
                     0 -> pickImage.launch("image/*")
                     1 -> toggleFlash()
                     2 -> {
-                        val cameraChoices = arrayOf(t("Kamera belakang", "Rear camera"), t("Kamera depan", "Front camera"))
+                        val cameraChoices = arrayOf("Kamera belakang", "Kamera depan")
                         AlertDialog.Builder(this)
-                            .setTitle(t("Pilih Kamera", "Choose Camera"))
+                            .setTitle("Pilih Kamera")
                             .setSingleChoiceItems(cameraChoices, if (useFrontCamera) 1 else 0) { dialog, selected ->
                                 useFrontCamera = selected == 1
                                 saveSettings()
@@ -511,24 +511,24 @@ class MainActivity : AppCompatActivity() {
                                 }
                                 dialog.dismiss()
                             }
-                            .setNegativeButton(t("Batal", "Cancel"), null)
+                            .setNegativeButton("Batal", null)
                             .show()
                     }
                     3 -> startCamera()
                 }
             }
-            .setNegativeButton(t("Tutup", "Close"), null)
+            .setNegativeButton("Tutup", null)
             .show()
     }
 
     private fun showHistory() {
         if (history.isEmpty()) {
-            AlertDialog.Builder(this).setTitle(t("Sejarah Scan", "Scan History")).setMessage(t("Belum ada QR atau barcode yang diimbas.", "No QR or barcode has been scanned yet.")).setPositiveButton("OK", null).show()
+            AlertDialog.Builder(this).setTitle("Sejarah Scan").setMessage("Belum ada QR atau barcode yang diimbas.").setPositiveButton("OK", null).show()
             return
         }
         val text = history.joinToString("\n\n") { it.value + "\n" + it.meta }
-        AlertDialog.Builder(this).setTitle(t("Sejarah Scan", "Scan History")).setMessage(text).setPositiveButton("Tutup", null)
-            .setNeutralButton(t("Padam Semua", "Clear All")) { _, _ -> history.clear(); saveHistoryToPrefs() }.show()
+        AlertDialog.Builder(this).setTitle("Sejarah Scan").setMessage(text).setPositiveButton("Tutup", null)
+            .setNeutralButton("Padam Semua") { _, _ -> history.clear(); saveHistoryToPrefs() }.show()
     }
 
     private fun showSettings() {
@@ -546,14 +546,14 @@ class MainActivity : AppCompatActivity() {
             })
         }
 
-        addSwitch(t("Bunyi selepas scan", "Sound after scan"), soundEnabled) { soundEnabled = it }
-        addSwitch(t("Getaran selepas scan", "Vibration after scan"), vibrationEnabled) { vibrationEnabled = it }
-        addSwitch(t("Buka link automatik", "Open links automatically"), autoOpenEnabled) { autoOpenEnabled = it }
-        addSwitch(t("Scan semula automatik", "Auto rescan"), autoScanEnabled) { autoScanEnabled = it }
-        addSwitch(t("Simpan sejarah scan", "Save scan history"), saveHistoryEnabled) { saveHistoryEnabled = it }
+        addSwitch("Bunyi selepas scan", soundEnabled) { soundEnabled = it }
+        addSwitch("Getaran selepas scan", vibrationEnabled) { vibrationEnabled = it }
+        addSwitch("Buka link automatik", autoOpenEnabled) { autoOpenEnabled = it }
+        addSwitch("Scan semula automatik", autoScanEnabled) { autoScanEnabled = it }
+        addSwitch("Simpan sejarah scan", saveHistoryEnabled) { saveHistoryEnabled = it }
 
         val cameraButton = Button(this).apply {
-            text = if (useFrontCamera) t("Kamera: Depan", "Camera: Front") else t("Kamera: Belakang", "Camera: Rear")
+            text = if (useFrontCamera) "Kamera: Depan" else "Kamera: Belakang"
             background = ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_glass)
             setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ink))
             isAllCaps = false
@@ -562,17 +562,17 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener {
                 val choices = arrayOf("Kamera belakang", "Kamera depan")
                 AlertDialog.Builder(this@MainActivity)
-                    .setTitle(t("Pilih Kamera", "Choose Camera"))
+                    .setTitle("Pilih Kamera")
                     .setSingleChoiceItems(choices, if (useFrontCamera) 1 else 0) { dialog, which ->
                         useFrontCamera = which == 1
                         saveSettings()
-                        text = if (useFrontCamera) t("Kamera: Depan", "Camera: Front") else t("Kamera: Belakang", "Camera: Rear")
+                        text = if (useFrontCamera) "Kamera: Depan" else "Kamera: Belakang"
                         if (scanningStarted && ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                             startCamera()
                         }
                         dialog.dismiss()
                     }
-                    .setNegativeButton(t("Batal", "Cancel"), null)
+                    .setNegativeButton("Batal", null)
                     .show()
             }
         }
@@ -586,7 +586,7 @@ class MainActivity : AppCompatActivity() {
         box.addView(cameraSpace)
 
         val historyButton = Button(this).apply {
-            text = t("Padam Semua Sejarah", "Clear All History")
+            text = "Padam Semua Sejarah"
             background = ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_glass)
             setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ink))
             isAllCaps = false
@@ -594,31 +594,31 @@ class MainActivity : AppCompatActivity() {
             setPadding(18, 0, 18, 0)
             setOnClickListener {
                 AlertDialog.Builder(this@MainActivity)
-                    .setTitle(t("Padam Sejarah", "Clear History"))
-                    .setMessage(t("Padam semua rekod scan yang disimpan?", "Clear all saved scan records?"))
-                    .setNegativeButton(t("Batal", "Cancel"), null)
-                    .setPositiveButton(t("Padam", "Clear")) { _, _ ->
+                    .setTitle("Padam Sejarah")
+                    .setMessage("Padam semua rekod scan yang disimpan?")
+                    .setNegativeButton("Batal", null)
+                    .setPositiveButton("Padam") { _, _ ->
                         history.clear()
                         saveHistoryToPrefs()
-                        Toast.makeText(this@MainActivity, t("Sejarah scan telah dipadam.", "Scan history cleared."), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "Sejarah scan telah dipadam.", Toast.LENGTH_SHORT).show()
                     }.show()
             }
         }
         box.addView(historyButton)
 
         AlertDialog.Builder(this)
-            .setTitle(t("Tetapan Scanner", "Scanner Settings"))
+            .setTitle("Tetapan Scanner")
             .setView(box)
-            .setPositiveButton(t("Selesai", "Done"), null)
-            .setNeutralButton(t("Privasi & Tentang", "Privacy & About")) { _, _ -> showPrivacyPolicy() }
+            .setPositiveButton("Selesai", null)
+            .setNeutralButton("Privasi & Tentang") { _, _ -> showPrivacyPolicy() }
             .show()
     }
 
     private fun showPrivacyPolicy() {
-        AlertDialog.Builder(this).setTitle(t("Privasi & Polisi", "Privacy & Policy"))
+        AlertDialog.Builder(this).setTitle("Privasi & Polisi")
             .setMessage("QR Scanner menggunakan kamera hanya untuk fungsi scan. Sejarah scan disimpan secara tempatan. Aplikasi menggunakan Google AdMob untuk iklan. Iklan ujian digunakan semasa pembangunan.")
-            .setNegativeButton(t("Tutup", "Close"), null)
-            .setPositiveButton(t("Buka Dasar Privasi", "Open Privacy Policy")) { _, _ ->
+            .setNegativeButton("Tutup", null)
+            .setPositiveButton("Buka Dasar Privasi") { _, _ ->
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/EarnPlayApps/QR-Scanner/blob/main/PRIVACY_POLICY.md"))) }
             }.show()
     }
