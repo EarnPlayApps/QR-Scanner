@@ -15,6 +15,17 @@ android {
         versionName = "1.0"
     }
 
+    buildTypes {
+        debug {
+            isMinifyEnabled = true
+            isShrinkResources = true
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
