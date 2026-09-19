@@ -32,14 +32,14 @@
             android:paddingTop="6dp" android:paddingBottom="5dp" android:layout_width="match_parent" android:layout_height="28dp"/>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal">
-            <Button android:id="@+id/flashButton" android:text="Flash" android:textAllCaps="false" android:minHeight="0dp" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp"/>
+            <Button android:id="@+id/flashButton" android:text="Flash" android:textAllCaps="false" android:background="@drawable/bg_glass" android:minHeight="0dp" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp"/>
             <Space android:layout_width="6dp" android:layout_height="1dp"/>
-            <Button android:id="@+id/galleryButton" android:text="Galeri" android:textAllCaps="false" android:minHeight="0dp" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp"/>
+            <Button android:id="@+id/galleryButton" android:text="Galeri" android:textAllCaps="false" android:background="@drawable/bg_glass" android:minHeight="0dp" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp"/>
             <Space android:layout_width="6dp" android:layout_height="1dp"/>
-            <Button android:id="@+id/historyButton" android:text="Sejarah" android:textAllCaps="false" android:minHeight="0dp" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp"/>
+            <Button android:id="@+id/historyButton" android:text="Sejarah" android:textAllCaps="false" android:background="@drawable/bg_glass" android:minHeight="0dp" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp"/>
         </LinearLayout>
 
-        <Button android:id="@+id/scanAgainButton" android:text="Scan Lagi" android:textAllCaps="false" android:visibility="gone"
+        <Button android:id="@+id/scanAgainButton" android:text="Scan Lagi" android:background="@drawable/bg_primary" android:textColor="#FFFFFF" android:textAllCaps="false" android:visibility="gone"
             android:layout_marginTop="6dp" android:minHeight="0dp" android:layout_width="match_parent" android:layout_height="44dp"/>
 
         <include android:id="@+id/nativeAdContainer" layout="@layout/native_ad" android:layout_width="match_parent" android:layout_height="0dp" android:visibility="gone"/>
@@ -61,7 +61,7 @@
             android:text="QR &amp; barcode scanner pantas dengan pengalaman premium" android:textColor="@color/muted" android:textSize="15sp" android:fontFamily="sans-serif"/>
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:gravity="center"
             android:text="SCAN QR  •  BARCODE  •  GALERI  •  SEJARAH" android:textColor="@color/ink" android:textSize="12sp" android:textStyle="bold" android:letterSpacing="0.08"/>
-        <Button android:id="@+id/startScanButton" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="28dp"
+        <Button android:id="@+id/startScanButton" android:background="@drawable/bg_primary" android:textColor="#FFFFFF" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="28dp"
             android:text="Mula Scan" android:textAllCaps="false" android:textSize="16sp" android:textStyle="bold"/>
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:gravity="center"
             android:text="Tekan Mula Scan untuk mengaktifkan kamera" android:textColor="@color/muted" android:textSize="12sp"/>
