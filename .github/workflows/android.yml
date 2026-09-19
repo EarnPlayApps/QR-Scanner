@@ -39,3 +39,5 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
 
 # Build verification trigger
+
+# Build verification trigger 2
