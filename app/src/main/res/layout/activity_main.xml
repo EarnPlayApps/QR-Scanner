@@ -19,17 +19,20 @@
                 android:paddingStart="16dp" android:paddingEnd="16dp" android:layout_width="wrap_content" android:layout_height="42dp"/>
         </LinearLayout>
 
-        <!-- Compact camera preview: intentionally fixed-height, not full-screen. -->
-        <FrameLayout android:layout_width="match_parent" android:layout_height="290dp"
-            android:background="@drawable/bg_round" android:padding="10dp">
-            <androidx.camera.view.PreviewView android:id="@+id/preview" android:layout_width="match_parent" android:layout_height="match_parent" app:scaleType="fillCenter"/>
-            <View android:id="@+id/scanFrame" android:layout_width="210dp" android:layout_height="210dp" android:layout_gravity="center" android:background="@drawable/scan_frame"/>
-            <TextView android:id="@+id/cameraMessage" android:text="Letak QR atau barcode dalam bingkai" android:textColor="#FFFFFF" android:textSize="12sp"
-                android:background="#99000000" android:padding="9dp" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="8dp"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+        <!-- Compact square camera preview: camera stays small and centered. -->
+        <FrameLayout android:layout_width="match_parent" android:layout_height="240dp"
+            android:gravity="center" android:background="@drawable/bg_round" android:padding="8dp">
+            <FrameLayout android:layout_width="224dp" android:layout_height="224dp"
+                android:layout_gravity="center" android:background="@drawable/bg_round">
+                <androidx.camera.view.PreviewView android:id="@+id/preview" android:layout_width="match_parent" android:layout_height="match_parent" app:scaleType="fillCenter"/>
+                <View android:id="@+id/scanFrame" android:layout_width="190dp" android:layout_height="190dp" android:layout_gravity="center" android:background="@drawable/scan_frame"/>
+                <TextView android:id="@+id/cameraMessage" android:text="Letak QR atau barcode dalam bingkai" android:textColor="#FFFFFF" android:textSize="11sp"
+                    android:background="#99000000" android:padding="8dp" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="6dp"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            </FrameLayout>
         </FrameLayout>
 
-        <TextView android:id="@+id/statusText" android:text="Sedia untuk scan" android:textSize="12sp" android:textColor="@color/muted" android:gravity="center"
+        <TextView android:id="@+id/statusText"/> android:text="Sedia untuk scan" android:textSize="12sp" android:textColor="@color/muted" android:gravity="center"
             android:paddingTop="6dp" android:paddingBottom="5dp" android:layout_width="match_parent" android:layout_height="28dp"/>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal">
