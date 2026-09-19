@@ -46,6 +46,9 @@ class MainActivity : AppCompatActivity() {
     private var soundEnabled = true
     private var vibrationEnabled = true
     private var autoOpenEnabled = false
+    private var autoScanEnabled = true
+    private var saveHistoryEnabled = true
+    private var useFrontCamera = false
     private var scanCount = 0
     private var interstitialAd: InterstitialAd? = null
     private var appOpenAd: AppOpenAd? = null
@@ -247,7 +250,8 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 p.unbindAll()
-                camera = p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, previewUseCase, analysis)
+                val selector = if (useFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+                camera = p.bindToLifecycle(this, selector, previewUseCase, analysis)
             } catch (e: Exception) {
                 permissionButton.visibility = View.VISIBLE
                 statusText.text = "Kamera gagal dimulakan."
@@ -261,7 +265,7 @@ class MainActivity : AppCompatActivity() {
             provider?.unbindAll()
             provider = null
             camera = null
-            saveHistory(value, format)
+            if (saveHistoryEnabled) saveHistory(value, format)
             scanCount++
             prefs.edit().putInt("scan_count", scanCount).apply()
             feedback()
@@ -330,7 +334,7 @@ class MainActivity : AppCompatActivity() {
             window.decorView.postDelayed({
                 if (!isFinishing && !isDestroyed &&
                     ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                    startCamera()
+                    if (autoScanEnabled) startCamera()
                 }
             }, 80)
             maybeShowInterstitial()
@@ -389,12 +393,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showSettings() {
-        val items = arrayOf("Bunyi selepas scan", "Getaran selepas scan", "Buka link automatik")
-        AlertDialog.Builder(this).setTitle("Tetapan Scanner")
-            .setMultiChoiceItems(items, booleanArrayOf(soundEnabled, vibrationEnabled, autoOpenEnabled)) { _, w, checked ->
-                when (w) { 0 -> soundEnabled = checked; 1 -> vibrationEnabled = checked; 2 -> autoOpenEnabled = checked }
+        val items = arrayOf(
+            "Bunyi selepas scan",
+            "Getaran selepas scan",
+            "Buka link automatik",
+            "Scan semula automatik",
+            "Simpan sejarah scan"
+        )
+        val checked = booleanArrayOf(soundEnabled, vibrationEnabled, autoOpenEnabled, autoScanEnabled, saveHistoryEnabled)
+        AlertDialog.Builder(this)
+            .setTitle("Tetapan Scanner")
+            .setMultiChoiceItems(items, checked) { _, which, value ->
+                when (which) {
+                    0 -> soundEnabled = value
+                    1 -> vibrationEnabled = value
+                    2 -> autoOpenEnabled = value
+                    3 -> autoScanEnabled = value
+                    4 -> saveHistoryEnabled = value
+                }
                 saveSettings()
-            }.setPositiveButton("Selesai", null).setNeutralButton("Privasi & Polisi") { _, _ -> showPrivacyPolicy() }.show()
+            }
+            .setSingleChoiceItems(arrayOf("Kamera belakang", "Kamera depan"), if (useFrontCamera) 1 else 0) { dialog, which ->
+                val changed = useFrontCamera != (which == 1)
+                useFrontCamera = which == 1
+                saveSettings()
+                if (changed && scanningStarted && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                    dialog.dismiss()
+                    startCamera()
+                }
+            }
+            .setPositiveButton("Selesai", null)
+            .setNeutralButton("Padam Semua Sejarah") { _, _ ->
+                history.clear()
+                saveHistoryToPrefs()
+                Toast.makeText(this, "Sejarah scan telah dipadam.", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Privasi & Tentang") { _, _ -> showPrivacyPolicy() }
+            .show()
     }
 
     private fun showPrivacyPolicy() {
@@ -407,12 +442,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveSettings() {
-        prefs.edit().putBoolean("sound", soundEnabled).putBoolean("vibration", vibrationEnabled).putBoolean("auto_open", autoOpenEnabled).apply()
+        prefs.edit().putBoolean("sound", soundEnabled).putBoolean("vibration", vibrationEnabled).putBoolean("auto_open", autoOpenEnabled).putBoolean("auto_scan", autoScanEnabled).putBoolean("save_history", saveHistoryEnabled).putBoolean("front_camera", useFrontCamera).apply()
     }
     private fun loadSettings() {
         soundEnabled = prefs.getBoolean("sound", true)
         vibrationEnabled = prefs.getBoolean("vibration", true)
         autoOpenEnabled = prefs.getBoolean("auto_open", false)
+        autoScanEnabled = prefs.getBoolean("auto_scan", true)
+        saveHistoryEnabled = prefs.getBoolean("save_history", true)
+        useFrontCamera = prefs.getBoolean("front_camera", false)
     }
     private fun saveHistory(value: String, format: String) {
         val time = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date())
