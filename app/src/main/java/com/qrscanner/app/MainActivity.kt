@@ -1,49 +1,30 @@
 package com.qrscanner.app
 
 import android.Manifest
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.media.AudioManager
-import android.media.ToneGenerator
+import android.media.*
 import android.net.Uri
-import android.os.Bundle
-import android.os.VibrationEffect
-import android.os.Vibrator
+import android.os.*
 import android.provider.Settings
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.common.InputImage
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.MobileAds
-import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.FullScreenContentCallback
-import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.*
+import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
-import com.google.android.gms.ads.appopen.AppOpenAd
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
@@ -52,40 +33,38 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraMessage: TextView
     private lateinit var statusText: TextView
     private lateinit var scanAgainButton: Button
-    private var camera: Camera? = null
     private var provider: ProcessCameraProvider? = null
+    private var camera: Camera? = null
     private val executor = Executors.newSingleThreadExecutor()
+    private val scanner by lazy { BarcodeScanning.getClient() }
+    private val prefs by lazy { getSharedPreferences("qr_scanner", MODE_PRIVATE) }
     private var locked = false
     private var torchOn = false
-    private val history = mutableListOf<HistoryItem>()
-    private val prefs by lazy { getSharedPreferences("qr_scanner", MODE_PRIVATE) }
-    private val scanner by lazy { BarcodeScanning.getClient() }
     private var soundEnabled = true
     private var vibrationEnabled = true
     private var autoOpenEnabled = false
+    private var scanCount = 0
     private var interstitialAd: InterstitialAd? = null
     private var appOpenAd: AppOpenAd? = null
     private var appOpenLoading = false
     private var appOpenShowing = false
     private var firstLaunch = true
-    private var scanCount = 0
-    private var lastBackgroundAt = 0L
-
+    private var backgroundAt = 0L
+    private val history = mutableListOf<HistoryItem>()
     data class HistoryItem(val value: String, val meta: String)
 
-    private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) {
+    private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        if (ok) {
             permissionButton.visibility = View.GONE
             startCamera()
         } else {
             permissionButton.visibility = View.VISIBLE
             statusText.text = "Kebenaran kamera diperlukan untuk scan melalui kamera."
-            Toast.makeText(this, "Kebenaran kamera tidak diberikan.", Toast.LENGTH_LONG).show()
         }
     }
 
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) scanImage(uri)
+        uri?.let { scanImage(it) }
     }
 
     override fun onCreate(state: Bundle?) {
@@ -96,7 +75,6 @@ class MainActivity : AppCompatActivity() {
         cameraMessage = findViewById(R.id.cameraMessage)
         statusText = findViewById(R.id.statusText)
         scanAgainButton = findViewById(R.id.scanAgainButton)
-
         loadSettings()
         loadHistory()
         scanCount = prefs.getInt("scan_count", 0)
@@ -106,15 +84,13 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
         findViewById<Button>(R.id.historyButton).setOnClickListener { showHistory() }
         findViewById<Button>(R.id.settingsButton).setOnClickListener { showSettings() }
-        scanAgainButton.setOnClickListener { scanAgain() }
-
+        scanAgainButton.setOnClickListener { startCamera() }
         permissionButton.setOnClickListener {
-            if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) ||
-                !prefs.getBoolean("asked_camera", false)) {
+            if (!prefs.getBoolean("asked_camera", false) || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
                 prefs.edit().putBoolean("asked_camera", true).apply()
                 cameraPermission.launch(Manifest.permission.CAMERA)
             } else {
-                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                runCatching { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))) }
             }
         }
 
@@ -132,102 +108,49 @@ class MainActivity : AppCompatActivity() {
             MobileAds.initialize(this) {
                 runOnUiThread {
                     if (isFinishing || isDestroyed) return@runOnUiThread
-                    findViewById<com.google.android.gms.ads.AdView>(R.id.bannerAd)
-                        .loadAd(AdRequest.Builder().build())
+                    runCatching { findViewById<AdView>(R.id.bannerAd).loadAd(AdRequest.Builder().build()) }
                     loadInterstitial()
                     loadAppOpenAd()
                 }
             }
-        }.onFailure {
-            // Ads must never be allowed to crash the scanner.
         }
     }
 
     private fun loadInterstitial() {
-        InterstitialAd.load(
-            this,
-            "ca-app-pub-3940256099942544/1033173712",
-            AdRequest.Builder().build(),
-            object : InterstitialAdLoadCallback() {
-                override fun onAdLoaded(ad: InterstitialAd) {
-                    interstitialAd = ad
-                    ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                        override fun onAdDismissedFullScreenContent() {
-                            interstitialAd = null
-                            loadInterstitial()
-                        }
-                        override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                            interstitialAd = null
-                            loadInterstitial()
-                        }
-                    }
-                }
-                override fun onAdFailedToLoad(error: LoadAdError) {
-                    interstitialAd = null
-                }
-            }
-        )
+        runCatching {
+            InterstitialAd.load(this, "ca-app-pub-3940256099942544/1033173712", AdRequest.Builder().build(),
+                object : InterstitialAdLoadCallback() {
+                    override fun onAdLoaded(ad: InterstitialAd) { interstitialAd = ad }
+                    override fun onAdFailedToLoad(e: LoadAdError) { interstitialAd = null }
+                })
+        }
     }
 
     private fun loadAppOpenAd() {
         if (appOpenLoading || appOpenAd != null) return
         appOpenLoading = true
-        AppOpenAd.load(
-            this,
-            "ca-app-pub-3940256099942544/9257395921",
-            AdRequest.Builder().build(),
-            object : AppOpenAd.AppOpenAdLoadCallback() {
-                override fun onAdLoaded(ad: AppOpenAd) {
-                    appOpenLoading = false
-                    appOpenAd = ad
-                }
-                override fun onAdFailedToLoad(error: LoadAdError) {
-                    appOpenLoading = false
-                    appOpenAd = null
-                }
-            }
-        )
+        runCatching {
+            AppOpenAd.load(this, "ca-app-pub-3940256099942544/9257395921", AdRequest.Builder().build(),
+                object : AppOpenAd.AppOpenAdLoadCallback() {
+                    override fun onAdLoaded(ad: AppOpenAd) { appOpenLoading = false; appOpenAd = ad }
+                    override fun onAdFailedToLoad(e: LoadAdError) { appOpenLoading = false; appOpenAd = null }
+                })
+        }.onFailure { appOpenLoading = false }
     }
 
     private fun showAppOpenIfReady() {
         if (firstLaunch || appOpenShowing || isFinishing || isDestroyed) return
-        val ad = appOpenAd ?: run {
-            loadAppOpenAd()
-            return
-        }
+        val ad = appOpenAd ?: return
         appOpenShowing = true
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-            override fun onAdDismissedFullScreenContent() {
-                appOpenAd = null
-                appOpenShowing = false
-                loadAppOpenAd()
-            }
-            override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                appOpenAd = null
-                appOpenShowing = false
-                loadAppOpenAd()
-            }
+            override fun onAdDismissedFullScreenContent() { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
+            override fun onAdFailedToShowFullScreenContent(e: AdError) { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
         }
-        runCatching { ad.show(this) }
-            .onFailure {
-                appOpenAd = null
-                appOpenShowing = false
-                loadAppOpenAd()
-            }
-    }
-
-    private fun maybeShowInterstitial() {
-        if (scanCount > 0 && scanCount % 10 == 0 &&
-            lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
-            interstitialAd?.let { ad ->
-                interstitialAd = null
-                runCatching { ad.show(this) }
-                    .onFailure { loadInterstitial() }
-            }
-        }
+        runCatching { ad.show(this) }.onFailure { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
     }
 
     private fun startCamera() {
+        if (isFinishing || isDestroyed) return
         locked = false
         scanAgainButton.visibility = View.GONE
         cameraMessage.text = "Letak QR atau barcode dalam bingkai"
@@ -243,129 +166,84 @@ class MainActivity : AppCompatActivity() {
                     .build()
 
                 analysis.setAnalyzer(executor) { proxy ->
-                    if (locked || proxy.image == null || isFinishing || isDestroyed) {
-                        proxy.close()
-                        return@setAnalyzer
-                    }
-                    val mediaImage = proxy.image ?: run {
-                        proxy.close()
-                        return@setAnalyzer
-                    }
-                    val input = runCatching {
-                        InputImage.fromMediaImage(mediaImage, proxy.imageInfo.rotationDegrees)
-                    }.getOrNull() ?: run {
-                        proxy.close()
-                        return@setAnalyzer
-                    }
-
-                    runCatching {
-                        scanner.process(input)
-                            .addOnSuccessListener { codes ->
-                                val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() }
-                                if (first != null && !locked && !isFinishing && !isDestroyed) {
-                                    locked = true
-                                    val value = first.rawValue.orEmpty()
-                                    val format = formatName(first.format)
-                                    runOnUiThread {
-                                        if (isFinishing || isDestroyed) return@runOnUiThread
-                                        runCatching {
-                                            saveHistory(value, format)
-                                            scanCount++
-                                            prefs.edit().putInt("scan_count", scanCount).apply()
-                                            handleFoundResult(value, format)
-                                        }.onFailure {
-                                            locked = false
-                                            Toast.makeText(this, "Keputusan scan tidak dapat dipaparkan.", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                }
-                            }
-                            .addOnFailureListener { }
-                            .addOnCompleteListener { runCatching { proxy.close() } }
-                    }.onFailure {
-                        runCatching { proxy.close() }
-                    }
+                    if (locked || isFinishing || isDestroyed) { proxy.close(); return@setAnalyzer }
+                    val image = proxy.image
+                    if (image == null) { proxy.close(); return@setAnalyzer }
+                    val input = runCatching { InputImage.fromMediaImage(image, proxy.imageInfo.rotationDegrees) }.getOrNull()
+                    if (input == null) { proxy.close(); return@setAnalyzer }
+                    scanner.process(input)
+                        .addOnSuccessListener { codes ->
+                            val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() } ?: return@addOnSuccessListener
+                            if (locked || isFinishing || isDestroyed) return@addOnSuccessListener
+                            locked = true
+                            val value = first.rawValue.orEmpty()
+                            val format = formatName(first.format)
+                            runOnUiThread { showScanResult(value, format) }
+                        }
+                        .addOnCompleteListener { runCatching { proxy.close() } }
                 }
 
                 p.unbindAll()
                 camera = p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, previewUseCase, analysis)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
                 permissionButton.visibility = View.VISIBLE
                 statusText.text = "Kamera gagal dimulakan."
-                Toast.makeText(this, "Tidak dapat memulakan kamera.", Toast.LENGTH_LONG).show()
             }
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private fun handleFoundResult(value: String, format: String) {
+    private fun showScanResult(value: String, format: String) {
         if (isFinishing || isDestroyed) return
-        if (soundEnabled) {
+        runCatching {
+            provider?.unbindAll()
+            provider = null
+            camera = null
+            saveHistory(value, format)
+            scanCount++
+            prefs.edit().putInt("scan_count", scanCount).apply()
+            feedback()
+            statusText.text = "Scan berjaya: $format"
+            cameraMessage.text = "QR/barcode ditemui"
+            showResult(value, format)
+        }.onFailure {
+            locked = false
+            statusText.text = "Keputusan scan tidak dapat dipaparkan."
+            Toast.makeText(this, "Keputusan scan tidak dapat dipaparkan.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun feedback() {
+        if (soundEnabled) runCatching {
             ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80).apply {
                 startTone(ToneGenerator.TONE_PROP_BEEP, 120)
                 release()
             }
         }
-
-        if (vibrationEnabled) {
-            val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
-            if (android.os.Build.VERSION.SDK_INT >= 26) {
-                vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(100)
-            }
+        if (vibrationEnabled) runCatching {
+            val v = getSystemService(VIBRATOR_SERVICE) as Vibrator
+            if (Build.VERSION.SDK_INT >= 26) v.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+            else { @Suppress("DEPRECATION") v.vibrate(100) }
         }
-
-        statusText.text = "Scan berjaya: $format"
-        cameraMessage.text = "QR/barcode ditemui"
-        showResult(value, format)
-        if (autoOpenEnabled && isWebUrl(value)) {
-            window.decorView.postDelayed({
-                if (!isFinishing && !isDestroyed) {
-                    runCatching {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value)))
-                    }
-                }
-            }, 350)
-        }
-
-    }
-
-    private fun scanAgain() {
-        locked = false
-        startCamera()
-    }
-
-    private fun toggleFlash() {
-        val c = camera
-        if (c == null) {
-            Toast.makeText(this, "Mula kamera dahulu.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (!c.cameraInfo.hasFlashUnit()) {
-            Toast.makeText(this, "Telefon ini tiada flashlight kamera.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        torchOn = !torchOn
-        c.cameraControl.enableTorch(torchOn)
-        findViewById<Button>(R.id.flashButton).text = if (torchOn) "Flash ON" else "Flash"
     }
 
     private fun scanImage(uri: Uri) {
+        if (isFinishing || isDestroyed) return
+        runCatching { provider?.unbindAll(); provider = null; camera = null }.onFailure { }
         statusText.text = "Mengimbas gambar..."
-        scanner.process(InputImage.fromFilePath(this, uri))
+        val input = runCatching { InputImage.fromFilePath(this, uri) }.getOrNull()
+        if (input == null) {
+            statusText.text = "Gambar tidak dapat dibuka."
+            Toast.makeText(this, "Gambar tidak dapat dibuka.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        scanner.process(input)
             .addOnSuccessListener { codes ->
                 val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() }
                 if (first == null) {
                     statusText.text = "Tiada QR/barcode ditemui."
                     Toast.makeText(this, "Tiada QR/barcode ditemui dalam gambar.", Toast.LENGTH_SHORT).show()
                 } else {
-                    val value = first.rawValue!!
-                    val format = formatName(first.format)
-                    saveHistory(value, format)
-                    scanCount++
-                    prefs.edit().putInt("scan_count", scanCount).apply()
-                    handleFoundResult(value, format)
+                    runOnUiThread { showScanResult(first.rawValue.orEmpty(), formatName(first.format)) }
                 }
             }
             .addOnFailureListener {
@@ -375,186 +253,90 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showResult(value: String, format: String) {
-        if (isFinishing || isDestroyed) return
         val view = layoutInflater.inflate(R.layout.dialog_result, null)
         view.findViewById<TextView>(R.id.resultText).text = value
         view.findViewById<TextView>(R.id.resultType).text = "SCAN RESULT • $format"
-
-        val openButton = view.findViewById<Button>(R.id.openButton)
-        openButton.isEnabled = isWebUrl(value)
-        openButton.alpha = if (openButton.isEnabled) 1f else .45f
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(view)
-            .setOnDismissListener {
-                locked = false
-                scanAgainButton.visibility = View.VISIBLE
-                maybeShowInterstitial()
-            }
-            .create()
+        val open = view.findViewById<Button>(R.id.openButton)
+        open.isEnabled = isWebUrl(value)
+        open.alpha = if (open.isEnabled) 1f else .45f
+        val dialog = AlertDialog.Builder(this).setView(view).create()
+        dialog.setOnDismissListener { locked = false; scanAgainButton.visibility = View.VISIBLE; maybeShowInterstitial() }
 
         view.findViewById<Button>(R.id.copyButton).setOnClickListener {
-            (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
-                .setPrimaryClip(ClipData.newPlainText("QR result", value))
-            Toast.makeText(this, "Keputusan disalin.", Toast.LENGTH_SHORT).show()
-        }
-
-        openButton.setOnClickListener {
-            if (isWebUrl(value)) {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value)))
+            runCatching {
+                (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
+                    .setPrimaryClip(ClipData.newPlainText("QR result", value))
+                Toast.makeText(this, "Keputusan disalin.", Toast.LENGTH_SHORT).show()
             }
         }
-
-        view.findViewById<Button>(R.id.shareButton).setOnClickListener {
-            startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, value)
-            }, "Kongsi keputusan scan"))
+        open.setOnClickListener {
+            if (isWebUrl(value)) runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value))) }
         }
-
+        view.findViewById<Button>(R.id.shareButton).setOnClickListener {
+            runCatching {
+                startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, value)
+                }, "Kongsi keputusan scan"))
+            }
+        }
         dialog.show()
+
+        if (autoOpenEnabled && isWebUrl(value)) {
+            window.decorView.postDelayed({
+                if (!isFinishing && !isDestroyed) runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value))) }
+            }, 350)
+        }
+    }
+
+    private fun maybeShowInterstitial() {
+        if (scanCount % 10 != 0 || scanCount == 0 || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+        val ad = interstitialAd ?: return
+        interstitialAd = null
+        runCatching { ad.show(this) }.onFailure { loadInterstitial() }
+    }
+
+    private fun toggleFlash() {
+        val c = camera ?: return Toast.makeText(this, "Mula kamera dahulu.", Toast.LENGTH_SHORT).show()
+        if (!c.cameraInfo.hasFlashUnit()) return Toast.makeText(this, "Telefon ini tiada flashlight kamera.", Toast.LENGTH_SHORT).show()
+        torchOn = !torchOn
+        runCatching { c.cameraControl.enableTorch(torchOn) }
+        findViewById<Button>(R.id.flashButton).text = if (torchOn) "Flash ON" else "Flash"
     }
 
     private fun showHistory() {
-        if (history.isEmpty()) {
-            AlertDialog.Builder(this)
-                .setTitle("Sejarah Scan")
-                .setMessage("Belum ada QR atau barcode yang diimbas.")
-                .setPositiveButton("OK", null)
-                .show()
-            return
-        }
-
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(18, 4, 18, 0)
-        }
-
-        val search = EditText(this).apply {
-            hint = "Cari QR / barcode..."
-            setSingleLine(true)
-        }
-        container.addView(search, LinearLayout.LayoutParams(-1, -2))
-
-        val list = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, 10, 0, 0)
-        }
-        container.addView(list, LinearLayout.LayoutParams(-1, -2))
-
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Sejarah Scan")
-            .setView(container)
-            .setNegativeButton("Tutup", null)
-            .setNeutralButton("Padam Semua") { _, _ ->
-                history.clear()
-                saveHistoryToPrefs()
-                Toast.makeText(this, "Sejarah telah dipadam.", Toast.LENGTH_SHORT).show()
-            }
-            .create()
-
-        fun render(query: String = "") {
-            list.removeAllViews()
-            history.filter {
-                query.isBlank() || it.value.contains(query, true) || it.meta.contains(query, true)
-            }.forEach { item ->
-                val row = LinearLayout(this).apply {
-                    orientation = LinearLayout.VERTICAL
-                    setPadding(14, 12, 14, 12)
-                    setBackgroundColor(Color.rgb(246, 248, 252))
-                    setOnClickListener {
-                        val format = item.meta.substringAfter(" • ", "BARCODE")
-                        showResult(item.value, format)
-                    }
-                    setOnLongClickListener {
-                        AlertDialog.Builder(this@MainActivity)
-                            .setTitle("Padam scan?")
-                            .setMessage(item.value)
-                            .setNegativeButton("Batal", null)
-                            .setPositiveButton("Padam") { _, _ ->
-                                history.removeAll { h -> h.value == item.value }
-                                saveHistoryToPrefs()
-                                render(search.text.toString())
-                            }
-                            .show()
-                        true
-                    }
-                }
-
-                val value = TextView(this).apply {
-                    text = item.value
-                    textSize = 15f
-                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ink))
-                }
-
-                val meta = TextView(this).apply {
-                    text = item.meta
-                    textSize = 12f
-                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted))
-                    setPadding(0, 5, 0, 0)
-                }
-
-                row.addView(value)
-                row.addView(meta)
-                list.addView(row, LinearLayout.LayoutParams(-1, -2).apply {
-                    bottomMargin = 8
-                })
-            }
-        }
-
-        search.addTextChangedListener(SimpleTextWatcher { render(it) })
-        render()
-        dialog.show()
+        if (history.isEmpty()) return AlertDialog.Builder(this).setTitle("Sejarah Scan").setMessage("Belum ada QR atau barcode yang diimbas.").setPositiveButton("OK", null).show()
+        val text = history.joinToString("\n\n") { it.value + "\n" + it.meta }
+        AlertDialog.Builder(this).setTitle("Sejarah Scan").setMessage(text).setPositiveButton("Tutup", null)
+            .setNeutralButton("Padam Semua") { _, _ -> history.clear(); saveHistoryToPrefs() }.show()
     }
 
     private fun showSettings() {
-        val items = arrayOf(
-            "Bunyi selepas scan",
-            "Getaran selepas scan",
-            "Buka link automatik"
-        )
-        val checked = booleanArrayOf(soundEnabled, vibrationEnabled, autoOpenEnabled)
-
-        AlertDialog.Builder(this)
-            .setTitle("Tetapan Scanner")
-            .setMultiChoiceItems(items, checked) { _, which, isChecked ->
-                when (which) {
-                    0 -> soundEnabled = isChecked
-                    1 -> vibrationEnabled = isChecked
-                    2 -> autoOpenEnabled = isChecked
-                }
+        val items = arrayOf("Bunyi selepas scan", "Getaran selepas scan", "Buka link automatik")
+        AlertDialog.Builder(this).setTitle("Tetapan Scanner")
+            .setMultiChoiceItems(items, booleanArrayOf(soundEnabled, vibrationEnabled, autoOpenEnabled)) { _, w, checked ->
+                when (w) { 0 -> soundEnabled = checked; 1 -> vibrationEnabled = checked; 2 -> autoOpenEnabled = checked }
                 saveSettings()
-            }
-            .setNeutralButton("Privasi & Polisi") { _, _ -> showPrivacyPolicy() }
-            .setPositiveButton("Selesai", null)
-            .show()
+            }.setPositiveButton("Selesai", null).setNeutralButton("Privasi & Polisi") { _, _ -> showPrivacyPolicy() }.show()
     }
 
     private fun showPrivacyPolicy() {
-        AlertDialog.Builder(this)
-            .setTitle("Privasi & Polisi")
-            .setMessage("QR Scanner menggunakan kamera hanya untuk fungsi scan. Sejarah scan disimpan secara tempatan pada peranti.\n\nAplikasi ini menggunakan Google AdMob untuk iklan. Google/partner iklan mungkin memproses data pengiklanan dan peranti mengikut polisi serta tetapan yang berkenaan.\n\nQR Scanner tidak meminta pengguna menekan atau mengklik iklan. Iklan ujian digunakan semasa pembangunan.\n\nDasar privasi penuh boleh dibuka melalui pautan GitHub rasmi projek.")
+        AlertDialog.Builder(this).setTitle("Privasi & Polisi")
+            .setMessage("QR Scanner menggunakan kamera hanya untuk fungsi scan. Sejarah scan disimpan secara tempatan. Aplikasi menggunakan Google AdMob untuk iklan. Iklan ujian digunakan semasa pembangunan.")
             .setNegativeButton("Tutup", null)
             .setPositiveButton("Buka Dasar Privasi") { _, _ ->
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/EarnPlayApps/QR-Scanner/blob/main/PRIVACY_POLICY.md")))
-            }
-            .show()
+                runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/EarnPlayApps/QR-Scanner/blob/main/PRIVACY_POLICY.md"))) }
+            }.show()
     }
 
     private fun saveSettings() {
-        prefs.edit()
-            .putBoolean("sound", soundEnabled)
-            .putBoolean("vibration", vibrationEnabled)
-            .putBoolean("auto_open", autoOpenEnabled)
-            .apply()
+        prefs.edit().putBoolean("sound", soundEnabled).putBoolean("vibration", vibrationEnabled).putBoolean("auto_open", autoOpenEnabled).apply()
     }
-
     private fun loadSettings() {
         soundEnabled = prefs.getBoolean("sound", true)
         vibrationEnabled = prefs.getBoolean("vibration", true)
         autoOpenEnabled = prefs.getBoolean("auto_open", false)
     }
-
     private fun saveHistory(value: String, format: String) {
         val time = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date())
         history.removeAll { it.value == value }
@@ -562,14 +344,9 @@ class MainActivity : AppCompatActivity() {
         while (history.size > 50) history.removeLast()
         saveHistoryToPrefs()
     }
-
     private fun saveHistoryToPrefs() {
-        prefs.edit().putString(
-            "history",
-            history.joinToString("\n|||") { item -> item.value + "|||" + item.meta }
-        ).apply()
+        prefs.edit().putString("history", history.joinToString("\n|||") { it.value + "|||" + it.meta }).apply()
     }
-
     private fun loadHistory() {
         val data = prefs.getString("history", "") ?: return
         if (data.isBlank()) return
@@ -578,66 +355,33 @@ class MainActivity : AppCompatActivity() {
             if (p.size == 2) history.add(HistoryItem(p[0], p[1]))
         }
     }
-
-    private fun formatName(format: Int): String = when (format) {
-        Barcode.FORMAT_AZTEC -> "AZTEC"
-        Barcode.FORMAT_CODE_128 -> "CODE_128"
-        Barcode.FORMAT_CODE_39 -> "CODE_39"
-        Barcode.FORMAT_CODE_93 -> "CODE_93"
-        Barcode.FORMAT_CODABAR -> "CODABAR"
-        Barcode.FORMAT_DATA_MATRIX -> "DATA_MATRIX"
-        Barcode.FORMAT_EAN_13 -> "EAN_13"
-        Barcode.FORMAT_EAN_8 -> "EAN_8"
-        Barcode.FORMAT_ITF -> "ITF"
-        Barcode.FORMAT_PDF417 -> "PDF417"
-        Barcode.FORMAT_QR_CODE -> "QR_CODE"
-        Barcode.FORMAT_UPC_A -> "UPC_A"
-        Barcode.FORMAT_UPC_E -> "UPC_E"
+    private fun formatName(f: Int) = when (f) {
+        Barcode.FORMAT_AZTEC -> "AZTEC"; Barcode.FORMAT_CODE_128 -> "CODE_128"; Barcode.FORMAT_CODE_39 -> "CODE_39"
+        Barcode.FORMAT_CODE_93 -> "CODE_93"; Barcode.FORMAT_CODABAR -> "CODABAR"; Barcode.FORMAT_DATA_MATRIX -> "DATA_MATRIX"
+        Barcode.FORMAT_EAN_13 -> "EAN_13"; Barcode.FORMAT_EAN_8 -> "EAN_8"; Barcode.FORMAT_ITF -> "ITF"
+        Barcode.FORMAT_PDF417 -> "PDF417"; Barcode.FORMAT_QR_CODE -> "QR_CODE"; Barcode.FORMAT_UPC_A -> "UPC_A"; Barcode.FORMAT_UPC_E -> "UPC_E"
         else -> "BARCODE"
     }
-
-    private fun isWebUrl(value: String): Boolean {
-        return runCatching {
-            val u = Uri.parse(value)
-            u.scheme == "http" || u.scheme == "https"
-        }.getOrDefault(false)
-    }
+    private fun isWebUrl(value: String) = runCatching { Uri.parse(value).scheme in setOf("http", "https") }.getOrDefault(false)
 
     override fun onResume() {
         super.onResume()
-        if (!firstLaunch && lastBackgroundAt > 0L && System.currentTimeMillis() - lastBackgroundAt > 60_000L) {
-            showAppOpenIfReady()
-        }
+        if (!firstLaunch && backgroundAt > 0 && System.currentTimeMillis() - backgroundAt > 60000) showAppOpenIfReady()
         firstLaunch = false
-        if (::preview.isInitialized &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
-            provider == null) {
-            startCamera()
-        }
+        if (::preview.isInitialized && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED && provider == null) startCamera()
     }
-
     override fun onPause() {
         super.onPause()
-        lastBackgroundAt = System.currentTimeMillis()
-        camera?.cameraControl?.enableTorch(false)
-        torchOn = false
+        backgroundAt = System.currentTimeMillis()
         runCatching { provider?.unbindAll() }
         provider = null
         camera = null
+        torchOn = false
     }
-
     override fun onDestroy() {
-        provider?.unbindAll()
+        runCatching { provider?.unbindAll() }
         scanner.close()
         executor.shutdown()
         super.onDestroy()
-    }
-
-    class SimpleTextWatcher(private val callback: (String) -> Unit) : android.text.TextWatcher {
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            callback(s?.toString() ?: "")
-        }
-        override fun afterTextChanged(s: android.text.Editable?) {}
     }
 }
