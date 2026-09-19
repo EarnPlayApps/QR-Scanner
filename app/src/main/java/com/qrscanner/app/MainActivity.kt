@@ -24,6 +24,7 @@ import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdOptions
 import com.google.android.gms.ads.nativead.NativeAdView
 import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import java.text.SimpleDateFormat
@@ -39,7 +40,26 @@ class MainActivity : AppCompatActivity() {
     private var provider: ProcessCameraProvider? = null
     private var camera: Camera? = null
     private val executor = Executors.newSingleThreadExecutor()
-    private val scanner by lazy { BarcodeScanning.getClient() }
+    private val scanner by lazy {
+        val options = BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(
+                Barcode.FORMAT_QR_CODE,
+                Barcode.FORMAT_AZTEC,
+                Barcode.FORMAT_CODE_128,
+                Barcode.FORMAT_CODE_39,
+                Barcode.FORMAT_CODE_93,
+                Barcode.FORMAT_CODABAR,
+                Barcode.FORMAT_DATA_MATRIX,
+                Barcode.FORMAT_EAN_13,
+                Barcode.FORMAT_EAN_8,
+                Barcode.FORMAT_ITF,
+                Barcode.FORMAT_PDF417,
+                Barcode.FORMAT_UPC_A,
+                Barcode.FORMAT_UPC_E
+            )
+            .build()
+        BarcodeScanning.getClient(options)
+    }
     private val prefs by lazy { getSharedPreferences("qr_scanner", MODE_PRIVATE) }
     private var locked = false
     private var torchOn = false
