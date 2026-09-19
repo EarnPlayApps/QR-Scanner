@@ -33,6 +33,14 @@ import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.gms.ads.appopen.AppOpenAd
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -55,6 +63,12 @@ class MainActivity : AppCompatActivity() {
     private var soundEnabled = true
     private var vibrationEnabled = true
     private var autoOpenEnabled = false
+    private var interstitialAd: InterstitialAd? = null
+    private var appOpenAd: AppOpenAd? = null
+    private var appOpenLoading = false
+    private var appOpenShowing = false
+    private var firstLaunch = true
+    private var scanCount = 0
 
     data class HistoryItem(val value: String, val meta: String)
 
@@ -84,6 +98,8 @@ class MainActivity : AppCompatActivity() {
 
         loadSettings()
         loadHistory()
+        scanCount = prefs.getInt("scan_count", 0)
+        setupAds()
 
         findViewById<Button>(R.id.flashButton).setOnClickListener { toggleFlash() }
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
@@ -107,6 +123,96 @@ class MainActivity : AppCompatActivity() {
         } else {
             prefs.edit().putBoolean("asked_camera", true).apply()
             cameraPermission.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    private fun setupAds() {
+        Thread {
+            MobileAds.initialize(this) {
+                runOnUiThread {
+                    val banner = findViewById<com.google.android.gms.ads.AdView>(R.id.bannerAd)
+                    banner.loadAd(AdRequest.Builder().build())
+                    loadInterstitial()
+                    loadAppOpenAd()
+                }
+            }
+        }.start()
+    }
+
+    private fun loadInterstitial() {
+        InterstitialAd.load(
+            this,
+            "ca-app-pub-3940256099942544/1033173712",
+            AdRequest.Builder().build(),
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: InterstitialAd) {
+                    interstitialAd = ad
+                    ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                        override fun onAdDismissedFullScreenContent() {
+                            interstitialAd = null
+                            loadInterstitial()
+                        }
+                        override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                            interstitialAd = null
+                            loadInterstitial()
+                        }
+                    }
+                }
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    interstitialAd = null
+                }
+            }
+        )
+    }
+
+    private fun loadAppOpenAd() {
+        if (appOpenLoading || appOpenAd != null) return
+        appOpenLoading = true
+        AppOpenAd.load(
+            this,
+            "ca-app-pub-3940256099942544/9257395921",
+            AdRequest.Builder().build(),
+            object : AppOpenAd.AppOpenAdLoadCallback() {
+                override fun onAdLoaded(ad: AppOpenAd) {
+                    appOpenLoading = false
+                    appOpenAd = ad
+                }
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    appOpenLoading = false
+                    appOpenAd = null
+                }
+            }
+        )
+    }
+
+    private fun showAppOpenIfReady() {
+        if (firstLaunch || appOpenShowing || isFinishing || isDestroyed) return
+        val ad = appOpenAd ?: run {
+            loadAppOpenAd()
+            return
+        }
+        appOpenShowing = true
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                appOpenAd = null
+                appOpenShowing = false
+                loadAppOpenAd()
+            }
+            override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                appOpenAd = null
+                appOpenShowing = false
+                loadAppOpenAd()
+            }
+        }
+        ad.show(this)
+    }
+
+    private fun maybeShowInterstitial() {
+        if (scanCount > 0 && scanCount % 10 == 0) {
+            interstitialAd?.let { ad ->
+                interstitialAd = null
+                ad.show(this)
+            }
         }
     }
 
@@ -220,6 +326,8 @@ class MainActivity : AppCompatActivity() {
                     val value = first.rawValue!!
                     val format = formatName(first.format)
                     saveHistory(value, format)
+                    scanCount++
+                    prefs.edit().putInt("scan_count", scanCount).apply()
                     handleFoundResult(value, format)
                 }
             }
@@ -243,6 +351,7 @@ class MainActivity : AppCompatActivity() {
             .setOnDismissListener {
                 locked = false
                 scanAgainButton.visibility = View.VISIBLE
+                maybeShowInterstitial()
             }
             .create()
 
@@ -446,6 +555,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!firstLaunch) showAppOpenIfReady()
+        firstLaunch = false
         if (::preview.isInitialized &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
             provider == null) {
