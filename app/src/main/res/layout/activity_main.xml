@@ -211,7 +211,6 @@
                 android:paddingEnd="18dp"
                 android:paddingTop="9dp"
                 android:paddingBottom="9dp"
-                android:id="@+id/cameraMessage"
                 android:text="Halakan QR / barcode ke ruang ini"
                 android:textColor="@color/white"
                 android:textSize="12sp"
