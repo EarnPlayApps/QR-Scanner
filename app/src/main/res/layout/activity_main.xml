@@ -1,105 +1,160 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:fillViewport="true"
     android:background="@color/bg">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="20dp"
-        android:gravity="center_vertical"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="18dp">
 
-        <TextView
-            android:text="QR Scanner"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:textColor="@color/ink"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-
-        <TextView
-            android:text="Scan QR codes and barcodes quickly"
-            android:textSize="14sp"
-            android:textColor="@color/muted"
-            android:layout_marginTop="4dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-    </LinearLayout>
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginHorizontal="16dp">
-
-        <androidx.camera.view.PreviewView
-            android:id="@+id/preview"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:scaleType="fillCenter"/>
+            android:layout_height="wrap_content"
+            android:paddingStart="20dp"
+            android:paddingTop="18dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="12dp"
+            android:gravity="center_vertical">
 
-        <View
-            android:id="@+id/scanFrame"
-            android:layout_width="250dp"
-            android:layout_height="250dp"
-            android:layout_gravity="center"
-            android:background="@drawable/scan_frame"/>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:text="QR Scanner"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/ink"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:text="Scan QR code dan barcode dengan cepat"
+                    android:textSize="14sp"
+                    android:textColor="@color/muted"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/settingsButton"
+                android:text="Tetapan"
+                android:minWidth="0dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"/>
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="340dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/bg_round">
+
+            <androidx.camera.view.PreviewView
+                android:id="@+id/preview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:scaleType="fillCenter"/>
+
+            <View
+                android:id="@+id/scanFrame"
+                android:layout_width="300dp"
+                android:layout_height="190dp"
+                android:layout_gravity="center"
+                android:background="@drawable/scan_frame"/>
+
+            <TextView
+                android:id="@+id/cameraMessage"
+                android:text="Letak QR atau barcode dalam bingkai"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:background="#99000000"
+                android:paddingStart="14dp"
+                android:paddingTop="9dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="9dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="16dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </FrameLayout>
 
         <TextView
-            android:id="@+id/cameraMessage"
-            android:text="Point camera at a QR code or barcode"
-            android:textColor="#FFFFFF"
-            android:textSize="15sp"
-            android:background="#66000000"
-            android:padding="10dp"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="24dp"
-            android:layout_width="wrap_content"
+            android:id="@+id/statusText"
+            android:text="Sedia untuk scan"
+            android:textSize="13sp"
+            android:textColor="@color/muted"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="2dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
-    </FrameLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:gravity="center"
-        android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/flashButton"
+                android:text="Flash"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="50dp"/>
+
+            <Space android:layout_width="8dp" android:layout_height="1dp"/>
+
+            <Button
+                android:id="@+id/galleryButton"
+                android:text="Galeri"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="50dp"/>
+
+            <Space android:layout_width="8dp" android:layout_height="1dp"/>
+
+            <Button
+                android:id="@+id/historyButton"
+                android:text="Sejarah"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="50dp"/>
+        </LinearLayout>
 
         <Button
-            android:id="@+id/flashButton"
-            android:text="Flash"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="52dp"/>
-
-        <Space android:layout_width="10dp" android:layout_height="1dp"/>
-
-        <Button
-            android:id="@+id/galleryButton"
-            android:text="Gallery"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="52dp"/>
-
-        <Space android:layout_width="10dp" android:layout_height="1dp"/>
+            android:id="@+id/scanAgainButton"
+            android:text="Scan Lagi"
+            android:visibility="gone"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"/>
 
         <Button
-            android:id="@+id/historyButton"
-            android:text="History"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="52dp"/>
+            android:id="@+id/permissionButton"
+            android:text="Benarkan Kamera"
+            android:visibility="gone"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="4dp"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"/>
     </LinearLayout>
-
-    <Button
-        android:id="@+id/permissionButton"
-        android:text="Allow Camera"
-        android:visibility="gone"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="16dp"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"/>
-</LinearLayout>
+</ScrollView>
