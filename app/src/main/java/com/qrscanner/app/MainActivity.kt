@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
     private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         if (ok) {
             permissionButton.visibility = View.GONE
-            startCamera()
+            preview.post { startCamera() }
         } else {
             permissionButton.visibility = View.VISIBLE
             statusText.text = "Kebenaran kamera diperlukan untuk scan melalui kamera."
@@ -134,7 +134,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.mainContent).visibility = View.VISIBLE
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             permissionButton.visibility = View.GONE
-            startCamera()
+            preview.post { startCamera() }
         } else {
             prefs.edit().putBoolean("asked_camera", true).apply()
             cameraPermission.launch(Manifest.permission.CAMERA)
@@ -149,7 +149,6 @@ class MainActivity : AppCompatActivity() {
                     runCatching { findViewById<AdView>(R.id.bannerAd).loadAd(AdRequest.Builder().build()) }
                     loadInterstitial()
                     loadAppOpenAd()
-                    loadNativeAd()
                 }
             }
         }
@@ -240,6 +239,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startCamera() {
         if (isFinishing || isDestroyed) return
+        if (!::preview.isInitialized) return
         locked = false
         scanAgainButton.visibility = View.GONE
         cameraMessage.text = "Letak QR atau barcode dalam bingkai"
