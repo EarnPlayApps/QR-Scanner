@@ -177,13 +177,6 @@ class MainActivity : AppCompatActivity() {
         cameraMessage.text = "QR/barcode ditemui"
         showResult(value, format)
 
-        if (autoOpenEnabled && isWebUrl(value)) {
-            window.decorView.postDelayed({
-                if (!isFinishing) {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value)))
-                }
-            }, 250)
-        }
     }
 
     private fun scanAgain() {
