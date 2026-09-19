@@ -13,6 +13,22 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
+        resourceConfigurations += listOf("en", "ms")
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
+    }
+
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1",
+                "META-INF/DEPENDENCIES",
+                "META-INF/NOTICE*",
+                "META-INF/LICENSE*"
+            )
+        }
     }
 
     buildTypes {
