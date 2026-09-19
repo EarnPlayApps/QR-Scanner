@@ -69,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     private var appOpenShowing = false
     private var firstLaunch = true
     private var scanCount = 0
+    private var lastBackgroundAt = 0L
 
     data class HistoryItem(val value: String, val meta: String)
 
@@ -487,7 +488,19 @@ class MainActivity : AppCompatActivity() {
                 }
                 saveSettings()
             }
+            .setNeutralButton("Privasi & Polisi") { _, _ -> showPrivacyPolicy() }
             .setPositiveButton("Selesai", null)
+            .show()
+    }
+
+    private fun showPrivacyPolicy() {
+        AlertDialog.Builder(this)
+            .setTitle("Privasi & Polisi")
+            .setMessage("QR Scanner menggunakan kamera hanya untuk fungsi scan. Sejarah scan disimpan secara tempatan pada peranti.\n\nAplikasi ini menggunakan Google AdMob untuk iklan. Google/partner iklan mungkin memproses data pengiklanan dan peranti mengikut polisi serta tetapan yang berkenaan.\n\nQR Scanner tidak meminta pengguna menekan atau mengklik iklan. Iklan ujian digunakan semasa pembangunan.\n\nDasar privasi penuh boleh dibuka melalui pautan GitHub rasmi projek.")
+            .setNegativeButton("Tutup", null)
+            .setPositiveButton("Buka Dasar Privasi") { _, _ ->
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/EarnPlayApps/QR-Scanner/blob/main/PRIVACY_POLICY.md")))
+            }
             .show()
     }
 
@@ -555,7 +568,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (!firstLaunch) showAppOpenIfReady()
+        if (!firstLaunch && lastBackgroundAt > 0L && System.currentTimeMillis() - lastBackgroundAt > 60_000L) {
+            showAppOpenIfReady()
+        }
         firstLaunch = false
         if (::preview.isInitialized &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
@@ -566,6 +581,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        lastBackgroundAt = System.currentTimeMillis()
         camera?.cameraControl?.enableTorch(false)
         torchOn = false
     }
