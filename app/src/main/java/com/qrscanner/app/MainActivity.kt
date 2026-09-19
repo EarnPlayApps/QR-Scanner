@@ -426,7 +426,8 @@ class MainActivity : AppCompatActivity() {
         val open = findViewById<Button>(R.id.openButton)
 
         resultText.text = value
-        resultType.text = if (isWebUrl(value)) t("Laman Web", "Website") else format.replace("_", " ")\n        findViewById<TextView>(R.id.resultInfo).text = t("Jenis: " + (if (format == "QR_CODE") "QR Code" else format.replace("_", " ")) + "\nKandungan: " + (if (isWebUrl(value)) "URL" else "Teks") + "\nMasa: ", "Type: " + (if (format == "QR_CODE") "QR Code" else format.replace("_", " ")) + "\nContent: " + (if (isWebUrl(value)) "URL" else "Text") + "\nTime: ") + SimpleDateFormat("dd MMM yyyy, h:mm a", Locale.getDefault()).format(Date())
+        resultType.text = if (isWebUrl(value)) t("Laman Web", "Website") else format.replace("_", " ")
+        findViewById<TextView>(R.id.resultInfo).text = t("Jenis: " + (if (format == "QR_CODE") "QR Code" else format.replace("_", " ")) + "\nKandungan: " + (if (isWebUrl(value)) "URL" else "Teks") + "\nMasa: ", "Type: " + (if (format == "QR_CODE") "QR Code" else format.replace("_", " ")) + "\nContent: " + (if (isWebUrl(value)) "URL" else "Text") + "\nTime: ") + SimpleDateFormat("dd MMM yyyy, h:mm a", Locale.getDefault()).format(Date())
         open.isEnabled = isWebUrl(value)
         open.alpha = if (open.isEnabled) 1f else .45f
 
@@ -484,7 +485,7 @@ class MainActivity : AppCompatActivity() {
         if (!c.cameraInfo.hasFlashUnit()) return Toast.makeText(this, "Telefon ini tiada flashlight kamera.", Toast.LENGTH_SHORT).show()
         torchOn = !torchOn
         runCatching { c.cameraControl.enableTorch(torchOn) }
-        findViewById<Button>(R.id.flashButton).text = if (torchOn) "Flash ON" else "Flash"
+        findViewById<ImageButton>(R.id.flashButton).alpha = if (torchOn) 1f else 0.82f
     }
 
     private fun showMoreMenu() {
