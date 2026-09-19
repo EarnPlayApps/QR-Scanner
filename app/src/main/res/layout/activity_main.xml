@@ -44,6 +44,8 @@
 
         <include android:id="@+id/nativeAdContainer" layout="@layout/native_ad" android:layout_width="match_parent" android:layout_height="0dp" android:visibility="gone"/>
 
+        <Button android:id="@+id/permissionButton" android:text="Benarkan Kamera" android:textAllCaps="false" android:visibility="gone" android:layout_width="match_parent" android:layout_height="44dp"/>
+
         <com.google.android.gms.ads.AdView android:id="@+id/bannerAd" android:layout_width="match_parent" android:layout_height="50dp"
             android:layout_marginTop="6dp" ads:adSize="BANNER" ads:adUnitId="ca-app-pub-3940256099942544/9214589741"/>
     </LinearLayout>
