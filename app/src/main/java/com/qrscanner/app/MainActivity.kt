@@ -70,6 +70,7 @@ class MainActivity : AppCompatActivity() {
     private var saveHistoryEnabled = true
     private var useFrontCamera = false
     private var scanCount = 0
+    private var languageMs = true
     private var interstitialAd: InterstitialAd? = null
     private var appOpenAd: AppOpenAd? = null
     private var appOpenLoading = false
@@ -105,28 +106,25 @@ class MainActivity : AppCompatActivity() {
         loadSettings()
         loadHistory()
         scanCount = prefs.getInt("scan_count", 0)
+        languageMs = prefs.getBoolean("language_ms", true)
+        applyLanguage()
         setupAds()
 
         findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
         findViewById<ImageButton>(R.id.flashButton).setOnClickListener { toggleFlash() }
-        findViewById<ImageButton>(R.id.flashHeaderButton).setOnClickListener { toggleFlash() }
+        findViewById<TextView>(R.id.languageButton).setOnClickListener { toggleLanguage() }
         findViewById<Button>(R.id.zoomOneButton).setOnClickListener { setCameraZoom(1f) }
         findViewById<Button>(R.id.zoomTwoButton).setOnClickListener { setCameraZoom(2f) }
-        findViewById<Button>(R.id.saveHistoryButton).setOnClickListener { Toast.makeText(this, "Keputusan telah disimpan ke sejarah.", Toast.LENGTH_SHORT).show() }
+        findViewById<Button>(R.id.saveHistoryButton).setOnClickListener { Toast.makeText(this, t("Keputusan telah disimpan ke sejarah.", "Result saved to history."), Toast.LENGTH_SHORT).show() }
         findViewById<ImageButton>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
-        findViewById<ImageButton>(R.id.settingsButton).setOnClickListener { showSettings() }
-        findViewById<Button>(R.id.resultBackButton).setOnClickListener { beginScanning() }
+        // Top-left menu is visual-only for now; no action is attached.
+        findViewById<ImageButton>(R.id.resultBackButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { beginScanning() }
         findViewById<ImageButton>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
         findViewById<ImageButton>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
         findViewById<ImageButton>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
         findViewById<ImageButton>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
         scanAgainButton.setOnClickListener { startCamera() }
-        // Reference design uses a launch screen, then enters the scanner automatically.
-        window.decorView.postDelayed({
-            if (!isFinishing && !isDestroyed && findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE) beginScanning()
-        }, 1400L)
-
         permissionButton.setOnClickListener {
             if (!prefs.getBoolean("asked_camera", false) || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
                 prefs.edit().putBoolean("asked_camera", true).apply()
@@ -137,6 +135,39 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
+
+    private fun toggleLanguage() {
+        languageMs = !languageMs
+        prefs.edit().putBoolean("language_ms", languageMs).apply()
+        applyLanguage()
+        Toast.makeText(this, if (languageMs) "Bahasa Melayu" else "English", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun applyLanguage() {
+        findViewById<TextView>(R.id.languageButton).text = if (languageMs) "BM" else "EN"
+        findViewById<TextView>(R.id.welcomeSubtitle).text = "Scan Anything, Anytime"
+        findViewById<TextView>(R.id.featureQrLabel).text = "QR Code"
+        findViewById<TextView>(R.id.featureBarcodeLabel).text = "Barcode"
+        findViewById<TextView>(R.id.featureMoreLabel).text = if (languageMs) "dan Lagi" else "and More"
+        findViewById<TextView>(R.id.welcomeTagline).text = if (languageMs) "Imbas Dunia Dengan Lebih Bijak" else "Scan a Smarter World"
+        findViewById<Button>(R.id.startScanButton).text = if (languageMs) "Mula Scan" else "Start Scan"
+        findViewById<TextView>(R.id.cameraMessage).text = if (languageMs) "Halakan QR / barcode ke ruang ini" else "Point a QR / barcode into this area"
+        findViewById<TextView>(R.id.flashLabel).text = if (languageMs) "Lampu" else "Flash"
+        findViewById<TextView>(R.id.galleryLabel).text = if (languageMs) "Galeri" else "Gallery"
+        findViewById<TextView>(R.id.bottomScanLabel).text = "Scan"
+        findViewById<TextView>(R.id.bottomHistoryLabel).text = if (languageMs) "Sejarah" else "History"
+        findViewById<TextView>(R.id.bottomSettingsLabel).text = if (languageMs) "Tetapan" else "Settings"
+        findViewById<TextView>(R.id.bottomMoreLabel).text = if (languageMs) "Lainnya" else "More"
+        findViewById<TextView>(R.id.resultTitle).text = if (languageMs) "Hasil Scan" else "Scan Result"
+        findViewById<TextView>(R.id.resultInfoTitle).text = if (languageMs) "Maklumat" else "Information"
+        findViewById<Button>(R.id.openButton).text = if (languageMs) "Buka Link" else "Open Link"
+        findViewById<Button>(R.id.copyButton).text = if (languageMs) "Salin" else "Copy"
+        findViewById<Button>(R.id.shareButton).text = if (languageMs) "Kongsi" else "Share"
+        findViewById<Button>(R.id.saveHistoryButton).text = if (languageMs) "Simpan" else "Save"
+        findViewById<Button>(R.id.resultScanAgainButton).text = if (languageMs) "Scan Lagi" else "Scan Again"
+    }
+
+    private fun t(ms: String, en: String) = if (languageMs) ms else en
 
     private fun beginScanning() {
         if (isFinishing || isDestroyed) return
@@ -395,14 +426,14 @@ class MainActivity : AppCompatActivity() {
         val open = findViewById<Button>(R.id.openButton)
 
         resultText.text = value
-        resultType.text = if (isWebUrl(value)) "Website" else format.replace("_", " ")\n        findViewById<TextView>(R.id.resultInfo).text = "Jenis                                      ${if (format == "QR_CODE") "QR Code" else format.replace("_", " ")}\\nKandungan                            ${if (isWebUrl(value)) "URL" else "Text"}\\nMasa                                      ${SimpleDateFormat("dd MMM yyyy, h:mm a", Locale.getDefault()).format(Date())}"
+        resultType.text = if (isWebUrl(value)) t("Laman Web", "Website") else format.replace("_", " ")\n        findViewById<TextView>(R.id.resultInfo).text = t("Jenis: " + (if (format == "QR_CODE") "QR Code" else format.replace("_", " ")) + "\nKandungan: " + (if (isWebUrl(value)) "URL" else "Teks") + "\nMasa: ", "Type: " + (if (format == "QR_CODE") "QR Code" else format.replace("_", " ")) + "\nContent: " + (if (isWebUrl(value)) "URL" else "Text") + "\nTime: ") + SimpleDateFormat("dd MMM yyyy, h:mm a", Locale.getDefault()).format(Date())
         open.isEnabled = isWebUrl(value)
         open.alpha = if (open.isEnabled) 1f else .45f
 
         open.setOnClickListener {
             if (isWebUrl(value)) {
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(value))) }
-                    .onFailure { Toast.makeText(this, "Link tidak dapat dibuka.", Toast.LENGTH_SHORT).show() }
+                    .onFailure { Toast.makeText(this, t("Link tidak dapat dibuka.", "Link could not be opened."), Toast.LENGTH_SHORT).show() }
             }
         }
 
@@ -410,7 +441,7 @@ class MainActivity : AppCompatActivity() {
             runCatching {
                 (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
                     .setPrimaryClip(ClipData.newPlainText("QR result", value))
-                Toast.makeText(this, "Keputusan disalin.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, t("Keputusan disalin.", "Result copied."), Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -419,7 +450,7 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"
                     putExtra(Intent.EXTRA_TEXT, value)
-                }, "Kongsi keputusan scan"))
+                }, t("Kongsi keputusan scan", "Share scan result")))
             }
         }
 
