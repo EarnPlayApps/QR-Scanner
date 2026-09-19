@@ -1,0 +1,8 @@
+<resources>
+    <color name="bg">#F6F8FC</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="ink">#152033</color>
+    <color name="muted">#718096</color>
+    <color name="primary">#315CFF</color>
+    <color name="line">#E5EAF2</color>
+</resources>
