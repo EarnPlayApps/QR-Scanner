@@ -83,6 +83,9 @@ class MainActivity : AppCompatActivity() {
     private var freeScanCredits = 0
     private var firstLaunch = true
     private var backgroundAt = 0L
+    private var appOpenReturnCount = 0
+    private var lastAppOpenShownAt = 0L
+    private var scansSinceInterstitial = 0
     private var scanningStarted = false
     private val history = mutableListOf<HistoryItem>()
     data class HistoryItem(val value: String, val meta: String)
@@ -113,6 +116,7 @@ class MainActivity : AppCompatActivity() {
         loadHistory()
         scanCount = prefs.getInt("scan_count", 0)
         freeScanCredits = prefs.getInt("free_scan_credits", 0)
+        scansSinceInterstitial = prefs.getInt("scans_since_interstitial", 0)
         languageMs = prefs.getBoolean("language_ms", true)
         applyLanguage()
         setupAds()
@@ -284,9 +288,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAppOpenIfReady() {
+        val now = System.currentTimeMillis()
         if (firstLaunch || appOpenShowing || isFinishing || isDestroyed) return
+        if (appOpenReturnCount < 3) return
+        if (now - lastAppOpenShownAt < 30000L) return
         val ad = appOpenAd ?: return
         appOpenShowing = true
+        lastAppOpenShownAt = now
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
             override fun onAdFailedToShowFullScreenContent(e: AdError) { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
@@ -358,7 +366,11 @@ class MainActivity : AppCompatActivity() {
             camera = null
             if (saveHistoryEnabled) saveHistory(value, format)
             scanCount++
-            prefs.edit().putInt("scan_count", scanCount).apply()
+            scansSinceInterstitial++
+            prefs.edit()
+                .putInt("scan_count", scanCount)
+                .putInt("scans_since_interstitial", scansSinceInterstitial)
+                .apply()
             feedback()
             statusText.text = "Scan berjaya: $format"
             cameraMessage.text = "QR/barcode ditemui"
@@ -485,15 +497,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun maybeShowInterstitial() {
+        if (scansSinceInterstitial < 5 || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+
         if (freeScanCredits > 0) {
             freeScanCredits--
-            prefs.edit().putInt("free_scan_credits", freeScanCredits).apply()
+            scansSinceInterstitial = 0
+            prefs.edit()
+                .putInt("free_scan_credits", freeScanCredits)
+                .putInt("scans_since_interstitial", scansSinceInterstitial)
+                .apply()
             return
         }
-        if (scanCount % 5 != 0 || scanCount == 0 || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+
         val ad = interstitialAd ?: return
         interstitialAd = null
-        runCatching { ad.show(this) }.onFailure { loadInterstitial() }
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() { loadInterstitial() }
+            override fun onAdFailedToShowFullScreenContent(error: AdError) { loadInterstitial() }
+        }
+        runCatching {
+            ad.show(this)
+            scansSinceInterstitial = 0
+            prefs.edit().putInt("scans_since_interstitial", scansSinceInterstitial).apply()
+        }.onFailure {
+            interstitialAd = null
+            loadInterstitial()
+        }
     }
 
     private fun loadRewardedAd() {
@@ -539,11 +568,11 @@ class MainActivity : AppCompatActivity() {
         }
         runCatching {
             ad.show(this) { _: RewardItem ->
-                freeScanCredits += 10
+                freeScanCredits += 1
                 prefs.edit().putInt("free_scan_credits", freeScanCredits).apply()
                 Toast.makeText(
                     this,
-                    t("Ganjaran diterima: 10 scan tanpa interstitial.", "Reward received: 10 scans without interstitial."),
+                    t("Ganjaran diterima: +1 free scan. Baki: $freeScanCredits", "Reward received: +1 free scan. Balance: $freeScanCredits"),
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -565,7 +594,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMoreMenu() {
-        val choices = arrayOf(t("Galeri", "Gallery"), t("Flash", "Flash"), t("Kamera depan / belakang", "Front / rear camera"), t("Tonton iklan & dapatkan 10 scan bebas interstitial", "Watch ad & get 10 scans without interstitial"), t("Scan Lagi", "Scan Again"))
+        val choices = arrayOf(t("Galeri", "Gallery"), t("Flash", "Flash"), t("Kamera depan / belakang", "Front / rear camera"), t("Tonton iklan & dapatkan +1 free scan", "Watch ad & get +1 free scan"), t("Scan Lagi", "Scan Again"))
         AlertDialog.Builder(this)
             .setTitle(t("Lainnya", "More"))
             .setItems(choices) { _, which ->
@@ -737,7 +766,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (!firstLaunch && backgroundAt > 0 && System.currentTimeMillis() - backgroundAt > 60000) showAppOpenIfReady()
+        val returningFromBackground = !firstLaunch && backgroundAt > 0L
+        if (returningFromBackground) {
+            appOpenReturnCount++
+            showAppOpenIfReady()
+        }
         firstLaunch = false
         if (::preview.isInitialized &&
             findViewById<View>(R.id.resultScreen).visibility != View.VISIBLE &&
