@@ -378,12 +378,7 @@
             ads:adSize="BANNER"
             ads:adUnitId="ca-app-pub-3940256099942544/9214589741"/>
 
-        <include
-            android:id="@+id/nativeAdContainer"
-            layout="@layout/native_ad"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="gone"/>
+
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -616,6 +611,14 @@
                     android:textSize="13sp"/>
 
             </LinearLayout>
+
+            <include
+                android:id="@+id/nativeAdContainer"
+                layout="@layout/native_ad"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:visibility="gone"/>
 
             <com.google.android.gms.ads.AdView
                 android:id="@+id/resultBannerAd"
