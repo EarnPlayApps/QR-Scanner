@@ -17,7 +17,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import com.google.android.gms.ads.*
-import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.nativead.NativeAd
@@ -75,16 +74,9 @@ class MainActivity : AppCompatActivity() {
     private var scanCount = 0
     private var languageMs = true
     private var interstitialAd: InterstitialAd? = null
-    private var appOpenAd: AppOpenAd? = null
-    private var appOpenLoading = false
-    private var appOpenShowing = false
     private var rewardedAd: RewardedAd? = null
     private var rewardedLoading = false
     private var freeScanCredits = 0
-    private var firstLaunch = true
-    private var backgroundAt = 0L
-    private var appOpenReturnCount = 0
-    private var lastAppOpenShownAt = 0L
     private var scansSinceInterstitial = 0
     private var scanningStarted = false
     private val history = mutableListOf<HistoryItem>()
@@ -207,7 +199,6 @@ class MainActivity : AppCompatActivity() {
                         findViewById<AdView>(R.id.resultBannerAd).loadAd(AdRequest.Builder().build())
                     }
                     loadInterstitial()
-                    loadAppOpenAd()
                     loadNativeAd()
                     loadRewardedAd()
                 }
@@ -273,33 +264,6 @@ class MainActivity : AppCompatActivity() {
                     override fun onAdFailedToLoad(e: LoadAdError) { interstitialAd = null }
                 })
         }
-    }
-
-    private fun loadAppOpenAd() {
-        if (appOpenLoading || appOpenAd != null) return
-        appOpenLoading = true
-        runCatching {
-            AppOpenAd.load(this, "ca-app-pub-3940256099942544/9257395921", AdRequest.Builder().build(),
-                object : AppOpenAd.AppOpenAdLoadCallback() {
-                    override fun onAdLoaded(ad: AppOpenAd) { appOpenLoading = false; appOpenAd = ad }
-                    override fun onAdFailedToLoad(e: LoadAdError) { appOpenLoading = false; appOpenAd = null }
-                })
-        }.onFailure { appOpenLoading = false }
-    }
-
-    private fun showAppOpenIfReady() {
-        val now = System.currentTimeMillis()
-        if (firstLaunch || appOpenShowing || isFinishing || isDestroyed) return
-        if (appOpenReturnCount < 3) return
-        if (now - lastAppOpenShownAt < 30000L) return
-        val ad = appOpenAd ?: return
-        appOpenShowing = true
-        lastAppOpenShownAt = now
-        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-            override fun onAdDismissedFullScreenContent() { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
-            override fun onAdFailedToShowFullScreenContent(e: AdError) { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
-        }
-        runCatching { ad.show(this) }.onFailure { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
     }
 
     private fun startCamera() {
