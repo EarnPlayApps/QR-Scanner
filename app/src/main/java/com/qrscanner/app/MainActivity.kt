@@ -27,6 +27,7 @@ import com.google.android.gms.ads.nativead.NativeAdView
 import com.google.android.gms.ads.rewarded.RewardItem
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
 import com.google.mlkit.vision.barcode.BarcodeScanning
@@ -811,12 +812,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showPrivacyPolicy() {
-        AlertDialog.Builder(this).setTitle(t("Privasi & Polisi", "Privacy & Policy"))
-            .setMessage("QR Scanner menggunakan kamera hanya untuk fungsi scan. Sejarah scan disimpan secara tempatan pada peranti. Aplikasi menggunakan Google AdMob untuk memaparkan iklan; Google dan rakan pengiklan mungkin memproses data peranti dan interaksi iklan mengikut polisi mereka. Jangan masukkan maklumat sulit ke dalam QR/barcode yang diimbas.")
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(t("Privasi & Polisi", "Privacy & Policy"))
+            .setMessage(t(
+                "QR Scanner menggunakan kamera hanya untuk scan. Sejarah scan disimpan pada peranti. Google AdMob memaparkan iklan dan Google/rakan pengiklan mungkin memproses data peranti serta interaksi iklan mengikut tetapan dan polisi mereka. Jangan imbas atau kongsi maklumat sulit.",
+                "QR Scanner uses the camera only for scanning. Scan history is stored on your device. Google AdMob displays ads, and Google/advertising partners may process device and ad-interaction data according to their settings and policies. Avoid scanning or sharing sensitive information."
+            ))
             .setNegativeButton(t("Tutup", "Close"), null)
             .setPositiveButton(t("Buka Dasar Privasi", "Open Privacy Policy")) { _, _ ->
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/EarnPlayApps/QR-Scanner/blob/main/PRIVACY_POLICY.md"))) }
-            }.show()
+            }
+        val consentInformation = UserMessagingPlatform.getConsentInformation(this)
+        if (consentInformation.privacyOptionsRequirementStatus ==
+            ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED) {
+            dialog.setNeutralButton(t("Pilihan privasi iklan", "Ad privacy choices")) { _, _ ->
+                UserMessagingPlatform.showPrivacyOptionsForm(this) { _ ->
+                    if (consentInformation.canRequestAds()) {
+                        // Ad requests remain controlled by the UMP consent status.
+                    }
+                }
+            }
+        }
+        dialog.show()
     }
 
     private fun saveSettings() {
