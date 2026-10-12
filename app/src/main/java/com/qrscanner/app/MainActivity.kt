@@ -47,7 +47,7 @@ class MainActivity : AppCompatActivity() {
     private var provider: ProcessCameraProvider? = null
     private var camera: Camera? = null
     private val executor = Executors.newSingleThreadExecutor()
-    private val scanner by lazy {
+    private val scannerDelegate = lazy {
         val options = BarcodeScannerOptions.Builder()
             .setBarcodeFormats(
                 Barcode.FORMAT_QR_CODE,
@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity() {
             .build()
         BarcodeScanning.getClient(options)
     }
+    private val scanner by scannerDelegate
     private val prefs by lazy { getSharedPreferences("qr_scanner", MODE_PRIVATE) }
     private var locked = false
     private var torchOn = false
@@ -126,7 +127,11 @@ class MainActivity : AppCompatActivity() {
         scansSinceInterstitial = prefs.getInt("scans_since_interstitial", 0)
         languageMs = prefs.getBoolean("language_ms", true)
         applyLanguage()
-        setupAds()
+        // Let the first screen render before initializing consent/ads SDKs.
+        // An SDK initialization problem must never close the scanner on launch.
+        window.decorView.post {
+            if (!isFinishing && !isDestroyed) runCatching { setupAds() }
+        }
 
         findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.settingsButton).apply {
@@ -900,7 +905,7 @@ class MainActivity : AppCompatActivity() {
     }
     override fun onDestroy() {
         runCatching { provider?.unbindAll() }
-        scanner.close()
+        if (scannerDelegate.isInitialized()) runCatching { scanner.close() }
         executor.shutdown()
         super.onDestroy()
     }
