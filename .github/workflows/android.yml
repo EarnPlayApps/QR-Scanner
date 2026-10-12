@@ -5,10 +5,12 @@ on:
   push:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,16 +31,30 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      - name: Verify toolchain
+        run: |
+          java -version
+          gradle --version
+          sdkmanager --list_installed
+
       - name: Build Debug APK
-        run: gradle :app:assembleDebug --stacktrace
+        run: gradle :app:assembleDebug --stacktrace --warning-mode all
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: QR-Scanner-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
 
-# Build verification trigger
-
-# Build verification trigger 2
-# APK build trigger 2026-10-13
+      - name: Upload build diagnostics
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: QR-Scanner-build-diagnostics
+          path: |
+            app/build/reports/**
+            app/build/outputs/logs/**
+            build/reports/**
+          if-no-files-found: warn
