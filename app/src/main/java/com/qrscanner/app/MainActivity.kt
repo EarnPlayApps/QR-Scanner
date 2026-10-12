@@ -783,7 +783,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showPrivacyPolicy() {
         AlertDialog.Builder(this).setTitle(t("Privasi & Polisi", "Privacy & Policy"))
-            .setMessage("QR Scanner menggunakan kamera hanya untuk fungsi scan. Sejarah scan disimpan secara tempatan. Aplikasi menggunakan Google AdMob untuk iklan. Iklan ujian digunakan semasa pembangunan.")
+            .setMessage("QR Scanner menggunakan kamera hanya untuk fungsi scan. Sejarah scan disimpan secara tempatan pada peranti. Aplikasi menggunakan Google AdMob untuk memaparkan iklan; Google dan rakan pengiklan mungkin memproses data peranti dan interaksi iklan mengikut polisi mereka. Jangan masukkan maklumat sulit ke dalam QR/barcode yang diimbas.")
             .setNegativeButton(t("Tutup", "Close"), null)
             .setPositiveButton(t("Buka Dasar Privasi", "Open Privacy Policy")) { _, _ ->
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/EarnPlayApps/QR-Scanner/blob/main/PRIVACY_POLICY.md"))) }
