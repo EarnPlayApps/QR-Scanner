@@ -15,16 +15,16 @@
         android:gravity="center_horizontal"
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
-        android:paddingTop="58dp"
-        android:paddingBottom="18dp"
+        android:paddingTop="30dp"
+        android:paddingBottom="16dp"
         android:background="@color/bg">
 
-        <Space android:layout_width="1dp" android:layout_height="22dp"/>
+        <Space android:layout_width="1dp" android:layout_height="10dp"/>
 
         <ImageView
             android:id="@+id/welcomeLogo"
-            android:layout_width="210dp"
-            android:layout_height="210dp"
+            android:layout_width="164dp"
+            android:layout_height="164dp"
             android:src="@drawable/ic_scanner_logo"
             android:contentDescription="QR Scanner"/>
 
@@ -61,17 +61,6 @@
             android:text="Scan Anything, Anytime"
             android:textColor="@color/muted"
             android:textSize="14sp"/>
-
-        <ProgressBar
-            android:layout_width="230dp"
-            android:layout_height="8dp"
-            android:layout_marginTop="46dp"
-            android:indeterminate="false"
-            android:max="100"
-            android:progress="72"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:progressTint="@color/orange"
-            android:progressBackgroundTint="@color/line"/>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -120,8 +109,8 @@
             android:id="@+id/welcomeTagline"
             android:text="Scan a Smarter World"
             android:textColor="@color/muted"
-            android:textSize="18sp"
-            android:fontFamily="cursive"/>
+            android:textSize="16sp"
+            android:textStyle="medium"/>
 
         <Button
             android:id="@+id/startScanButton"
@@ -528,8 +517,9 @@
                     android:gravity="center"
                     android:textColor="#1956D1"
                     android:textSize="14sp"
-                    android:maxLines="2"
-                    android:ellipsize="middle"/>
+                    android:maxLines="5"
+                    android:ellipsize="middle"
+                    android:textIsSelectable="true"/>
 
                 <Button
                     android:id="@+id/openButton"
