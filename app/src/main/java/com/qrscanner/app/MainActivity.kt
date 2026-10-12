@@ -517,7 +517,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         runCatching { findViewById<View>(R.id.nativeAdContainer).visibility = View.VISIBLE }
-        runCatching { loadNativeAd() }
 
         if (autoOpenEnabled && isWebUrl(value))
             window.decorView.postDelayed({
