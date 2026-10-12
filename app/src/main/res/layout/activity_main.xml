@@ -125,10 +125,19 @@
 
         <Button
             android:id="@+id/startScanButton"
-            android:layout_width="1dp"
-            android:layout_height="1dp"
-            android:visibility="visible"
-            android:alpha="0"/>
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/bg_language"
+            android:text="Mula Scan"
+            android:textColor="@color/orange"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:allCaps="false"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"/>
 
     </LinearLayout>
 
@@ -159,8 +168,9 @@
                 android:drawableTint="@color/ink"
                 android:gravity="center"
                 android:padding="9dp"
-                android:clickable="false"
-                android:focusable="false"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Menu"
                 android:background="@drawable/bg_glass"/>
 
             <LinearLayout
