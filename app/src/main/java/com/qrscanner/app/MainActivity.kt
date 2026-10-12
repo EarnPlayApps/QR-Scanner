@@ -122,13 +122,17 @@ class MainActivity : AppCompatActivity() {
         setupAds()
 
         findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
+        findViewById<Button>(R.id.settingsButton).apply {
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { showQuickMenu() }
+        }
         findViewById<Button>(R.id.flashButton).setOnClickListener { toggleFlash() }
         findViewById<Button>(R.id.flashHeaderButton).setOnClickListener { toggleLanguage() }
         findViewById<Button>(R.id.zoomOneButton).setOnClickListener { setCameraZoom(1f) }
         findViewById<Button>(R.id.zoomTwoButton).setOnClickListener { setCameraZoom(2f) }
         findViewById<Button>(R.id.saveHistoryButton).setOnClickListener { Toast.makeText(this, t("Keputusan telah disimpan ke sejarah.", "Result saved to history."), Toast.LENGTH_SHORT).show() }
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
-        // Hamburger menu is visual-only for now.
         findViewById<Button>(R.id.resultBackButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
@@ -136,11 +140,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
         findViewById<Button>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
         scanAgainButton.setOnClickListener { startCamera() }
-        // Reference design uses a launch screen, then enters the scanner automatically.
-        window.decorView.postDelayed({
-            if (!isFinishing && !isDestroyed && findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE) beginScanning()
-        }, 1400L)
-
         permissionButton.setOnClickListener {
             if (!prefs.getBoolean("asked_camera", false) || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
                 prefs.edit().putBoolean("asked_camera", true).apply()
@@ -177,6 +176,10 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.saveHistoryButton).text = if (languageMs) "Simpan ke Sejarah" else "Save to History"
         findViewById<Button>(R.id.resultScanAgainButton).text = if (languageMs) "Scan Lagi" else "Scan Again"
         findViewById<TextView>(R.id.welcomeSubtitle).text = "Scan Anything, Anytime"
+        findViewById<Button>(R.id.startScanButton).apply {
+            text = if (languageMs) "Mula Scan" else "Start Scan"
+            isAllCaps = false
+        }
         findViewById<TextView>(R.id.welcomeTagline).text = if (languageMs) "Imbas Dunia Dengan Lebih Bijak" else "Scan a Smarter World"
     }
 
@@ -591,6 +594,31 @@ class MainActivity : AppCompatActivity() {
         torchOn = !torchOn
         runCatching { c.cameraControl.enableTorch(torchOn) }
         findViewById<Button>(R.id.flashButton).text = if (torchOn) "Flash ON" else "Flash"
+    }
+
+    private fun showQuickMenu() {
+        val choices = arrayOf(
+            t("Mula Scan", "Start Scanning"),
+            t("Pilih gambar dari galeri", "Choose image from Gallery"),
+            t("Sejarah scan", "Scan History"),
+            t("Tetapan", "Settings"),
+            t("Tonton iklan untuk +1 scan percuma", "Watch ad for +1 free scan"),
+            t("Privasi & Tentang", "Privacy & About")
+        )
+        AlertDialog.Builder(this)
+            .setTitle(t("Menu QR Scanner", "QR Scanner Menu"))
+            .setItems(choices) { _, which ->
+                when (which) {
+                    0 -> beginScanning()
+                    1 -> pickImage.launch("image/*")
+                    2 -> showHistory()
+                    3 -> showSettings()
+                    4 -> showRewardedAd()
+                    5 -> showPrivacyPolicy()
+                }
+            }
+            .setNegativeButton(t("Tutup", "Close"), null)
+            .show()
     }
 
     private fun showMoreMenu() {
