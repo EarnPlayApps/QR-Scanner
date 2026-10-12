@@ -231,7 +231,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadNativeAd() {
         runCatching {
             val adView = findViewById<NativeAdView>(R.id.nativeAdView)
-            val loader = AdLoader.Builder(this, "ca-app-pub-3940256099942544/2247696110")
+            val loader = AdLoader.Builder(this, "ca-app-pub-9940728659432865/2572993259")
                 .forNativeAd { ad: NativeAd ->
                     if (isFinishing || isDestroyed) {
                         ad.destroy()
@@ -280,7 +280,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadInterstitial() {
         runCatching {
-            InterstitialAd.load(this, "ca-app-pub-3940256099942544/1033173712", AdRequest.Builder().build(),
+            InterstitialAd.load(this, "ca-app-pub-9940728659432865/6512238262", AdRequest.Builder().build(),
                 object : InterstitialAdLoadCallback() {
                     override fun onAdLoaded(ad: InterstitialAd) { interstitialAd = ad }
                     override fun onAdFailedToLoad(e: LoadAdError) { interstitialAd = null }
@@ -292,7 +292,7 @@ class MainActivity : AppCompatActivity() {
         if (appOpenLoading || appOpenAd != null) return
         appOpenLoading = true
         runCatching {
-            AppOpenAd.load(this, "ca-app-pub-3940256099942544/9257395921", AdRequest.Builder().build(),
+            AppOpenAd.load(this, "ca-app-pub-9940728659432865/9951869956", AdRequest.Builder().build(),
                 object : AppOpenAd.AppOpenAdLoadCallback() {
                     override fun onAdLoaded(ad: AppOpenAd) { appOpenLoading = false; appOpenAd = ad }
                     override fun onAdFailedToLoad(e: LoadAdError) { appOpenLoading = false; appOpenAd = null }
@@ -566,7 +566,7 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             RewardedAd.load(
                 this,
-                "ca-app-pub-3940256099942544/5224354917",
+                "ca-app-pub-9940728659432865/7753257039",
                 AdRequest.Builder().build(),
                 object : RewardedAdLoadCallback() {
                     override fun onAdLoaded(ad: RewardedAd) {
