@@ -365,9 +365,21 @@
 
         <Button
             android:id="@+id/permissionButton"
-            android:layout_width="1dp"
-            android:layout_height="1dp"
-            android:visibility="gone"/>
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginStart="18dp"
+            android:layout_marginEnd="18dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="6dp"
+            android:visibility="gone"
+            android:text="Benarkan Kamera"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            android:background="@drawable/bg_primary"
+            android:minWidth="0dp"
+            android:minHeight="0dp"/>
 
         <com.google.android.gms.ads.AdView
             android:id="@+id/bannerAd"
