@@ -87,6 +87,8 @@ class MainActivity : AppCompatActivity() {
     private var lastAppOpenShownAt = 0L
     private var scansSinceInterstitial = 0
     private var scanningStarted = false
+    private var currentResultValue = ""
+    private var currentResultFormat = ""
     private val history = mutableListOf<HistoryItem>()
     data class HistoryItem(val value: String, val meta: String)
 
@@ -131,7 +133,14 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.flashHeaderButton).setOnClickListener { toggleLanguage() }
         findViewById<Button>(R.id.zoomOneButton).setOnClickListener { setCameraZoom(1f) }
         findViewById<Button>(R.id.zoomTwoButton).setOnClickListener { setCameraZoom(2f) }
-        findViewById<Button>(R.id.saveHistoryButton).setOnClickListener { Toast.makeText(this, t("Keputusan telah disimpan ke sejarah.", "Result saved to history."), Toast.LENGTH_SHORT).show() }
+        findViewById<Button>(R.id.saveHistoryButton).setOnClickListener {
+            if (currentResultValue.isBlank()) {
+                Toast.makeText(this, t("Tiada keputusan untuk disimpan.", "No result to save."), Toast.LENGTH_SHORT).show()
+            } else {
+                saveHistory(currentResultValue, currentResultFormat)
+                Toast.makeText(this, t("Keputusan telah disimpan ke sejarah.", "Result saved to history."), Toast.LENGTH_SHORT).show()
+            }
+        }
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
         findViewById<Button>(R.id.resultBackButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { beginScanning() }
@@ -459,6 +468,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<AdView>(R.id.resultBannerAd).visibility = View.VISIBLE
         findViewById<AdView>(R.id.bannerAd).visibility = View.GONE
 
+        currentResultValue = value
+        currentResultFormat = format
         val resultText = findViewById<TextView>(R.id.resultText)
         val resultType = findViewById<TextView>(R.id.resultType)
         val open = findViewById<Button>(R.id.openButton)
@@ -746,9 +757,16 @@ class MainActivity : AppCompatActivity() {
         }
         box.addView(historyButton)
 
+        val settingsScroll = ScrollView(this).apply {
+            isFillViewport = true
+            addView(box, ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ))
+        }
         AlertDialog.Builder(this)
             .setTitle(t("Tetapan Scanner", "Scanner Settings"))
-            .setView(box)
+            .setView(settingsScroll)
             .setPositiveButton(t("Selesai", "Done"), null)
             .setNeutralButton(t("Privasi & Tentang", "Privacy & About")) { _, _ -> showPrivacyPolicy() }
             .show()
