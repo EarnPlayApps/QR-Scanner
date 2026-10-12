@@ -33,13 +33,21 @@ android {
 
     buildTypes {
         debug {
-            // Keep debug builds unshrunk so CI can produce a reliable installable APK.
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // Keep debug signing for easy installation, but shrink code/resources to reduce APK size.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 
