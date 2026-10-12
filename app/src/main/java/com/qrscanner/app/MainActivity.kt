@@ -106,6 +106,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             permissionButton.visibility = View.VISIBLE
             statusText.text = t("Kebenaran kamera diperlukan untuk scan melalui kamera.", "Camera permission is required to scan.")
+            Toast.makeText(this, t("Benarkan akses kamera untuk mula mengimbas.", "Allow camera access to start scanning."), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -161,7 +162,10 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
         scanAgainButton.setOnClickListener { startCamera() }
         permissionButton.setOnClickListener {
-            if (!prefs.getBoolean("asked_camera", false) || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                permissionButton.visibility = View.GONE
+                startCamera()
+            } else if (!prefs.getBoolean("asked_camera", false) || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
                 prefs.edit().putBoolean("asked_camera", true).apply()
                 cameraPermission.launch(Manifest.permission.CAMERA)
             } else {
