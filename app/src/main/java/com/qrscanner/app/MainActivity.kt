@@ -420,24 +420,33 @@ class MainActivity : AppCompatActivity() {
         statusText.text = "Mengimbas gambar..."
         val input = runCatching { InputImage.fromFilePath(this, uri) }.getOrNull()
         if (input == null) {
-            statusText.text = "Gambar tidak dapat dibuka."
-            Toast.makeText(this, "Gambar tidak dapat dibuka.", Toast.LENGTH_SHORT).show()
+            statusText.text = t("Gambar tidak dapat dibuka.", "Unable to open image.")
+            Toast.makeText(this, t("Gambar tidak dapat dibuka.", "Unable to open image."), Toast.LENGTH_SHORT).show()
+            resumeCameraAfterGalleryFailure()
             return
         }
         scanner.process(input)
             .addOnSuccessListener { codes ->
                 val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() }
                 if (first == null) {
-                    statusText.text = "Tiada QR/barcode ditemui."
-                    Toast.makeText(this, "Tiada QR/barcode ditemui dalam gambar.", Toast.LENGTH_SHORT).show()
+                    statusText.text = t("Tiada QR/barcode ditemui.", "No QR/barcode found.")
+                    Toast.makeText(this, t("Tiada QR/barcode ditemui dalam gambar.", "No QR/barcode found in image."), Toast.LENGTH_SHORT).show()
+                    resumeCameraAfterGalleryFailure()
                 } else {
                     runOnUiThread { showScanResult(first.rawValue.orEmpty(), formatName(first.format)) }
                 }
             }
             .addOnFailureListener {
-                statusText.text = "Gagal mengimbas gambar."
-                Toast.makeText(this, "Gambar tidak dapat diimbas.", Toast.LENGTH_SHORT).show()
+                statusText.text = t("Gagal mengimbas gambar.", "Failed to scan image.")
+                Toast.makeText(this, t("Gambar tidak dapat diimbas.", "Unable to scan image."), Toast.LENGTH_SHORT).show()
+                resumeCameraAfterGalleryFailure()
             }
+    }
+
+    private fun resumeCameraAfterGalleryFailure() {
+        if (!autoScanEnabled || !scanningStarted || isFinishing || isDestroyed) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
+        preview.post { if (!isFinishing && !isDestroyed) startCamera() }
     }
 
     private fun showResult(value: String, format: String) {
@@ -803,7 +812,7 @@ class MainActivity : AppCompatActivity() {
         if (::preview.isInitialized &&
             findViewById<View>(R.id.resultScreen).visibility != View.VISIBLE &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
-            scanningStarted && provider == null) {
+            scanningStarted && autoScanEnabled && provider == null) {
             preview.post { startCamera() }
         }
     }
