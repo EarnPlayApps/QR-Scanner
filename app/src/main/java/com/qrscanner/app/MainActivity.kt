@@ -478,8 +478,8 @@ class MainActivity : AppCompatActivity() {
 
         val contentType = when {
             isWebUrl(value) -> t("Pautan web", "Web link")
-            value.startsWith("mailto:", ignoreCase = true) || value.contains(Regex("[A-Z0-9._%+-]+@[A-Z0-9.-]+\\\\.[A-Z]{2,}", RegexOption.IGNORE_CASE)) -> t("E-mel", "Email")
-            value.startsWith("tel:", ignoreCase = true) || value.matches(Regex("^\\\\+?[0-9() .-]{7,}$")) -> t("Nombor telefon", "Phone number")
+            value.startsWith("mailto:", ignoreCase = true) || value.contains(Regex("[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}", RegexOption.IGNORE_CASE)) -> t("E-mel", "Email")
+            value.startsWith("tel:", ignoreCase = true) || value.matches(Regex("^\\+?[0-9() .-]{7,}$")) -> t("Nombor telefon", "Phone number")
             value.startsWith("WIFI:", ignoreCase = true) -> t("Maklumat Wi-Fi", "Wi-Fi information")
             value.startsWith("geo:", ignoreCase = true) -> t("Lokasi", "Location")
             else -> t("Teks / data", "Text / data")
@@ -487,7 +487,7 @@ class MainActivity : AppCompatActivity() {
         val scannedAt = SimpleDateFormat("dd MMM yyyy, HH:mm:ss", Locale.getDefault()).format(Date())
         resultText.text = value
         resultType.text = "SCAN RESULT  •  $format"
-        resultInfo.text = t("Jenis: $format\\nKandungan: $contentType\\nMasa: $scannedAt", "Format: $format\\nContent: $contentType\\nTime: $scannedAt")
+        resultInfo.text = t("Jenis: $format\nKandungan: $contentType\nMasa: $scannedAt", "Format: $format\nContent: $contentType\nTime: $scannedAt")
         open.isEnabled = isWebUrl(value)
         open.alpha = if (open.isEnabled) 1f else .45f
 
