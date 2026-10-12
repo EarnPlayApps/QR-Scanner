@@ -110,7 +110,7 @@
             android:text="Scan a Smarter World"
             android:textColor="@color/muted"
             android:textSize="16sp"
-            android:textStyle="medium"/>
+            android:textStyle="normal"/>
 
         <Button
             android:id="@+id/startScanButton"
