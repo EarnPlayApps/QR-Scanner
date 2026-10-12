@@ -33,8 +33,9 @@ android {
 
     buildTypes {
         debug {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // Keep debug builds unshrunk so CI can produce a reliable installable APK.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
         release {
             isMinifyEnabled = true
