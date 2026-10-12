@@ -65,6 +65,6 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.1")
     implementation("com.google.android.gms:play-services-ads:24.7.0")
-    implementation("com.google.android.ump:user-messaging-platform:3.2.0")
+    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
     implementation("com.google.guava:guava:33.3.1-android")
 }
