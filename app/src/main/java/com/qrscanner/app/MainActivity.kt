@@ -27,6 +27,8 @@ import com.google.android.gms.ads.nativead.NativeAdView
 import com.google.android.gms.ads.rewarded.RewardItem
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.android.ump.ConsentRequestParameters
+import com.google.android.ump.UserMessagingPlatform
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -87,6 +89,7 @@ class MainActivity : AppCompatActivity() {
     private var appOpenReturnCount = 0
     private var lastAppOpenShownAt = 0L
     private var scansSinceInterstitial = 0
+    private var adsInitializationStarted = false
     private var scanningStarted = false
     private var currentResultValue = ""
     private var currentResultFormat = ""
@@ -211,19 +214,45 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupAds() {
-        runCatching {
-            MobileAds.initialize(this) {
-                runOnUiThread {
-                    if (isFinishing || isDestroyed) return@runOnUiThread
-                    runCatching {
-                        findViewById<AdView>(R.id.bannerAd).loadAd(AdRequest.Builder().build())
+        val consentInformation = UserMessagingPlatform.getConsentInformation(this)
+        val consentParameters = ConsentRequestParameters.Builder().build()
 
-                    }
-                    loadInterstitial()
-                    loadAppOpenAd()
-                    loadNativeAd()
-                    loadRewardedAd()
+        // Refresh consent status and display Google's consent form when required
+        // before requesting any ads.
+        consentInformation.requestConsentInfoUpdate(
+            this,
+            consentParameters,
+            {
+                UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) { _ ->
+                    initializeAdsIfAllowed(consentInformation.canRequestAds())
                 }
+            },
+            {
+                // A previously valid consent choice may still permit ad requests
+                // if the consent-information refresh cannot complete.
+                initializeAdsIfAllowed(consentInformation.canRequestAds())
+            }
+        )
+
+        // The SDK permits requests immediately when a valid choice is already stored.
+        if (consentInformation.canRequestAds()) {
+            initializeAdsIfAllowed(true)
+        }
+    }
+
+    private fun initializeAdsIfAllowed(canRequestAds: Boolean) {
+        if (!canRequestAds || adsInitializationStarted || isFinishing || isDestroyed) return
+        adsInitializationStarted = true
+        MobileAds.initialize(this) {
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                runCatching {
+                    findViewById<AdView>(R.id.bannerAd).loadAd(AdRequest.Builder().build())
+                }
+                loadInterstitial()
+                loadAppOpenAd()
+                loadNativeAd()
+                loadRewardedAd()
             }
         }
     }
