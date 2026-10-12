@@ -526,9 +526,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }, 350)
 
-        runCatching {
-            findViewById<AdView>(R.id.resultBannerAd).loadAd(AdRequest.Builder().build())
-        }
     }
 
     private fun maybeShowInterstitial() {
