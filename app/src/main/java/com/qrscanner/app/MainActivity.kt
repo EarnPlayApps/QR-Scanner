@@ -99,7 +99,7 @@ class MainActivity : AppCompatActivity() {
             preview.post { startCamera() }
         } else {
             permissionButton.visibility = View.VISIBLE
-            statusText.text = "Kebenaran kamera diperlukan untuk scan melalui kamera."
+            statusText.text = t("Kebenaran kamera diperlukan untuk scan melalui kamera.", "Camera permission is required to scan.")
         }
     }
 
@@ -320,8 +320,8 @@ class MainActivity : AppCompatActivity() {
         if (!::preview.isInitialized) return
         locked = false
         scanAgainButton.visibility = View.GONE
-        cameraMessage.text = "Letak QR atau barcode dalam bingkai"
-        statusText.text = "Kamera aktif — sedang mengimbas"
+        cameraMessage.text = t("Letak QR atau barcode dalam bingkai", "Place a QR code or barcode inside the frame")
+        statusText.text = t("Kamera aktif — sedang mengimbas", "Camera active — scanning")
         val future = ProcessCameraProvider.getInstance(this)
         future.addListener({
             try {
@@ -366,7 +366,7 @@ class MainActivity : AppCompatActivity() {
                 camera = p.bindToLifecycle(this, selector, previewUseCase, analysis)
             } catch (e: Exception) {
                 permissionButton.visibility = View.VISIBLE
-                statusText.text = "Kamera gagal dimulakan."
+                statusText.text = t("Kamera gagal dimulakan.", "Unable to start camera.")
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -386,7 +386,7 @@ class MainActivity : AppCompatActivity() {
                 .apply()
             feedback()
             statusText.text = "Scan berjaya: $format"
-            cameraMessage.text = "QR/barcode ditemui"
+            cameraMessage.text = t("QR/barcode ditemui", "QR/barcode found")
             showResult(value, format)
         }.onFailure {
             locked = false
@@ -486,7 +486,7 @@ class MainActivity : AppCompatActivity() {
         }
         val scannedAt = SimpleDateFormat("dd MMM yyyy, HH:mm:ss", Locale.getDefault()).format(Date())
         resultText.text = value
-        resultType.text = "SCAN RESULT  •  $format"
+        resultType.text = t("HASIL SCAN  •  $format", "SCAN RESULT  •  $format")
         resultInfo.text = t("Jenis: $format\nKandungan: $contentType\nMasa: $scannedAt", "Format: $format\nContent: $contentType\nTime: $scannedAt")
         open.isEnabled = isWebUrl(value)
         open.alpha = if (open.isEnabled) 1f else .45f
@@ -621,8 +621,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun toggleFlash() {
-        val c = camera ?: return Toast.makeText(this, "Mula kamera dahulu.", Toast.LENGTH_SHORT).show()
-        if (!c.cameraInfo.hasFlashUnit()) return Toast.makeText(this, "Telefon ini tiada flashlight kamera.", Toast.LENGTH_SHORT).show()
+        val c = camera ?: return Toast.makeText(this, t("Mula kamera dahulu.", "Start the camera first."), Toast.LENGTH_SHORT).show()
+        if (!c.cameraInfo.hasFlashUnit()) return Toast.makeText(this, t("Telefon ini tiada flashlight kamera.", "This phone has no camera flash."), Toast.LENGTH_SHORT).show()
         torchOn = !torchOn
         runCatching { c.cameraControl.enableTorch(torchOn) }
         findViewById<Button>(R.id.flashButton).text = if (torchOn) "Flash ON" else "Flash"
