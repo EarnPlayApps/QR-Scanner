@@ -190,11 +190,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.resultTitle).text = if (languageMs) "Hasil Scan" else "Scan Result"
         findViewById<TextView>(R.id.resultInfoTitle).text = if (languageMs) "Maklumat" else "Information"
         findViewById<Button>(R.id.openButton).text = if (languageMs) "Buka Link" else "Open Link"
-        findViewById<Button>(R.id.copyButton).text = if (languageMs) "Salin Link" else "Copy Link"
+        findViewById<Button>(R.id.copyButton).text = if (languageMs) "Salin Kandungan" else "Copy Content"
         findViewById<Button>(R.id.shareButton).text = if (languageMs) "Kongsi" else "Share"
         findViewById<Button>(R.id.saveHistoryButton).text = if (languageMs) "Simpan ke Sejarah" else "Save to History"
         findViewById<Button>(R.id.resultScanAgainButton).text = if (languageMs) "Scan Lagi" else "Scan Again"
-        findViewById<TextView>(R.id.welcomeSubtitle).text = "Scan Anything, Anytime"
+        findViewById<TextView>(R.id.welcomeSubtitle).text = if (languageMs) "Pengimbas QR & Barcode Pantas" else "Fast QR & Barcode Scanner"
         findViewById<Button>(R.id.startScanButton).apply {
             text = if (languageMs) "Mula Scan" else "Start Scan"
             isAllCaps = false
@@ -302,6 +302,10 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     adView.setNativeAd(ad)
+                    // Only reserve space for a native ad after a real ad has loaded.
+                    val resultScreen = findViewById<View>(R.id.resultScreen)
+                    findViewById<View>(R.id.nativeAdContainer).visibility =
+                        if (resultScreen.visibility == View.VISIBLE) View.VISIBLE else View.GONE
                 }
                 .withNativeAdOptions(
                     NativeAdOptions.Builder()
@@ -501,7 +505,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.mainContent).visibility = View.GONE
         findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
         findViewById<View>(R.id.resultScreen).visibility = View.VISIBLE
-        findViewById<View>(R.id.nativeAdContainer).visibility = View.VISIBLE
+        findViewById<View>(R.id.nativeAdContainer).visibility = View.GONE
         findViewById<AdView>(R.id.resultBannerAd).visibility = View.GONE
         findViewById<AdView>(R.id.bannerAd).visibility = View.GONE
 
@@ -551,7 +555,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        runCatching { findViewById<View>(R.id.nativeAdContainer).visibility = View.VISIBLE }
+        runCatching { findViewById<View>(R.id.nativeAdContainer).visibility = View.GONE }
 
         if (autoOpenEnabled && isWebUrl(value))
             window.decorView.postDelayed({
