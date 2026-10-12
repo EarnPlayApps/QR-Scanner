@@ -304,9 +304,10 @@
                     android:layout_height="56dp"
                     android:minWidth="0dp"
                     android:minHeight="0dp"
-                    android:text="▣"
-                    android:textColor="@color/white"
-                    android:textSize="22sp"
+                    android:text=""
+                    android:drawableTop="@drawable/ic_flash"
+                    android:drawableTint="@color/white"
+                    android:padding="14dp"
                     android:background="@drawable/bg_hint"/>
 
                 <TextView
@@ -341,9 +342,10 @@
                     android:layout_height="56dp"
                     android:minWidth="0dp"
                     android:minHeight="0dp"
-                    android:text="▧"
-                    android:textColor="@color/white"
-                    android:textSize="22sp"
+                    android:text=""
+                    android:drawableTop="@drawable/ic_gallery"
+                    android:drawableTint="@color/white"
+                    android:padding="14dp"
                     android:background="@drawable/bg_hint"/>
 
                 <TextView
@@ -402,7 +404,9 @@
             <Button
                 android:id="@+id/bottomScanButton"
                 style="@style/BottomNavButton"
-                android:text="⌂"
+                android:text="Scan"
+                android:drawableTop="@drawable/ic_scan"
+                android:drawableTint="@color/orange"
                 android:textColor="@color/orange"/>
 
             <Button
