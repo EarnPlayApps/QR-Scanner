@@ -85,6 +85,7 @@ class MainActivity : AppCompatActivity() {
     private var appOpenShowing = false
     private var rewardedAd: RewardedAd? = null
     private var rewardedLoading = false
+    private var nativeAdLoaded = false
     private var freeScanCredits = 0
     private var firstLaunch = true
     private var backgroundAt = 0L
@@ -302,6 +303,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     adView.setNativeAd(ad)
+                    nativeAdLoaded = true
                     // Only reserve space for a native ad after a real ad has loaded.
                     val resultScreen = findViewById<View>(R.id.resultScreen)
                     findViewById<View>(R.id.nativeAdContainer).visibility =
@@ -505,7 +507,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.mainContent).visibility = View.GONE
         findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
         findViewById<View>(R.id.resultScreen).visibility = View.VISIBLE
-        findViewById<View>(R.id.nativeAdContainer).visibility = View.GONE
+        findViewById<View>(R.id.nativeAdContainer).visibility = if (nativeAdLoaded) View.VISIBLE else View.GONE
         findViewById<AdView>(R.id.resultBannerAd).visibility = View.GONE
         findViewById<AdView>(R.id.bannerAd).visibility = View.GONE
 
