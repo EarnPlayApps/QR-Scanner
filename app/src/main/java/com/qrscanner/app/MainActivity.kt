@@ -143,8 +143,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
-        findViewById<Button>(R.id.resultBackButton).setOnClickListener { beginScanning() }
-        findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { beginScanning() }
+        findViewById<Button>(R.id.resultBackButton).setOnClickListener { maybeShowInterstitial(); beginScanning() }
+        findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { maybeShowInterstitial(); beginScanning() }
         findViewById<Button>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
         findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
@@ -304,7 +304,8 @@ class MainActivity : AppCompatActivity() {
         val now = System.currentTimeMillis()
         if (firstLaunch || appOpenShowing || isFinishing || isDestroyed) return
         if (appOpenReturnCount < 3) return
-        if (now - lastAppOpenShownAt < 30000L) return
+        if (now - lastAppOpenShownAt < 900000L) return
+        if (backgroundAt <= 0L || now - backgroundAt < 60000L) return
         val ad = appOpenAd ?: return
         appOpenShowing = true
         lastAppOpenShownAt = now
@@ -528,11 +529,11 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             findViewById<AdView>(R.id.resultBannerAd).loadAd(AdRequest.Builder().build())
         }
-        maybeShowInterstitial()
     }
 
     private fun maybeShowInterstitial() {
-        if (scansSinceInterstitial < 5 || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+        if (scansSinceInterstitial < 8 || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+        if (System.currentTimeMillis() - prefs.getLong("last_interstitial_at", 0L) < 300000L) return
 
         if (freeScanCredits > 0) {
             freeScanCredits--
@@ -553,7 +554,7 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             ad.show(this)
             scansSinceInterstitial = 0
-            prefs.edit().putInt("scans_since_interstitial", scansSinceInterstitial).apply()
+            prefs.edit().putInt("scans_since_interstitial", scansSinceInterstitial).putLong("last_interstitial_at", System.currentTimeMillis()).apply()
         }.onFailure {
             interstitialAd = null
             loadInterstitial()
