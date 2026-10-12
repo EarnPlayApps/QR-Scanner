@@ -898,3 +898,25 @@ class MainActivity : AppCompatActivity() {
         }
         firstLaunch = false
         if (::preview.isInitialized &&
+            findViewById<View>(R.id.resultScreen).visibility != View.VISIBLE &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
+            scanningStarted && autoScanEnabled && provider == null) {
+            preview.post { startCamera() }
+        }
+    }
+    override fun onPause() {
+        super.onPause()
+        backgroundAt = System.currentTimeMillis()
+        runCatching { provider?.unbindAll() }
+        provider = null
+        camera = null
+        locked = false
+        torchOn = false
+    }
+    override fun onDestroy() {
+        runCatching { provider?.unbindAll() }
+        if (scannerDelegate.isInitialized()) runCatching { scanner.close() }
+        executor.shutdown()
+        super.onDestroy()
+    }
+}
