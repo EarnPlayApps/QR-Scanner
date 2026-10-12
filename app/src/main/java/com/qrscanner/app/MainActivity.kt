@@ -86,6 +86,8 @@ class MainActivity : AppCompatActivity() {
     private var rewardedAd: RewardedAd? = null
     private var rewardedLoading = false
     private var nativeAdLoaded = false
+    private var scannerBannerLoaded = false
+    private var resultBannerLoaded = false
     private var freeScanCredits = 0
     private var firstLaunch = true
     private var backgroundAt = 0L
@@ -161,6 +163,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
         findViewById<Button>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
         scanAgainButton.setOnClickListener { startCamera() }
+        configureBannerAds()
         permissionButton.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                 permissionButton.visibility = View.GONE
@@ -213,7 +216,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
         findViewById<View>(R.id.resultScreen).visibility = View.GONE
         findViewById<View>(R.id.mainContent).visibility = View.VISIBLE
-        findViewById<AdView>(R.id.bannerAd).visibility = View.VISIBLE
+        findViewById<AdView>(R.id.bannerAd).visibility = if (scannerBannerLoaded) View.VISIBLE else View.GONE
         findViewById<View>(R.id.nativeAdContainer).visibility = View.GONE
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             permissionButton.visibility = View.GONE
@@ -259,11 +262,39 @@ class MainActivity : AppCompatActivity() {
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 runCatching {
                     findViewById<AdView>(R.id.bannerAd).loadAd(AdRequest.Builder().build())
+                    findViewById<AdView>(R.id.resultBannerAd).loadAd(AdRequest.Builder().build())
                 }
                 loadInterstitial()
                 loadAppOpenAd()
                 loadNativeAd()
                 loadRewardedAd()
+            }
+        }
+    }
+
+    private fun configureBannerAds() {
+        val scannerBanner = findViewById<AdView>(R.id.bannerAd)
+        val resultBanner = findViewById<AdView>(R.id.resultBannerAd)
+        scannerBanner.adListener = object : AdListener() {
+            override fun onAdLoaded() {
+                scannerBannerLoaded = true
+                scannerBanner.visibility = if (findViewById<View>(R.id.mainContent).visibility == View.VISIBLE) View.VISIBLE else View.GONE
+            }
+            override fun onAdFailedToLoad(error: LoadAdError) {
+                scannerBannerLoaded = false
+                scannerBanner.visibility = View.GONE
+                android.util.Log.w("QRScannerAds", "Scanner banner failed: ${error.code} ${error.message}")
+            }
+        }
+        resultBanner.adListener = object : AdListener() {
+            override fun onAdLoaded() {
+                resultBannerLoaded = true
+                resultBanner.visibility = if (findViewById<View>(R.id.resultScreen).visibility == View.VISIBLE) View.VISIBLE else View.GONE
+            }
+            override fun onAdFailedToLoad(error: LoadAdError) {
+                resultBannerLoaded = false
+                resultBanner.visibility = View.GONE
+                android.util.Log.w("QRScannerAds", "Result banner failed: ${error.code} ${error.message}")
             }
         }
     }
@@ -512,7 +543,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
         findViewById<View>(R.id.resultScreen).visibility = View.VISIBLE
         findViewById<View>(R.id.nativeAdContainer).visibility = if (nativeAdLoaded) View.VISIBLE else View.GONE
-        findViewById<AdView>(R.id.resultBannerAd).visibility = View.GONE
+        findViewById<AdView>(R.id.resultBannerAd).visibility = if (resultBannerLoaded) View.VISIBLE else View.GONE
         findViewById<AdView>(R.id.bannerAd).visibility = View.GONE
 
         currentResultValue = value
@@ -560,8 +591,6 @@ class MainActivity : AppCompatActivity() {
                 }, t("Kongsi keputusan scan", "Share scan result")))
             }
         }
-
-        runCatching { findViewById<View>(R.id.nativeAdContainer).visibility = View.GONE }
 
         if (autoOpenEnabled && isWebUrl(value))
             window.decorView.postDelayed({
