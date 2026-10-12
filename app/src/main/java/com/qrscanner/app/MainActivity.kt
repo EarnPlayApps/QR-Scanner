@@ -217,7 +217,7 @@ class MainActivity : AppCompatActivity() {
                     if (isFinishing || isDestroyed) return@runOnUiThread
                     runCatching {
                         findViewById<AdView>(R.id.bannerAd).loadAd(AdRequest.Builder().build())
-                        findViewById<AdView>(R.id.resultBannerAd).loadAd(AdRequest.Builder().build())
+
                     }
                     loadInterstitial()
                     loadAppOpenAd()
@@ -467,7 +467,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
         findViewById<View>(R.id.resultScreen).visibility = View.VISIBLE
         findViewById<View>(R.id.nativeAdContainer).visibility = View.VISIBLE
-        findViewById<AdView>(R.id.resultBannerAd).visibility = View.VISIBLE
+        findViewById<AdView>(R.id.resultBannerAd).visibility = View.GONE
         findViewById<AdView>(R.id.bannerAd).visibility = View.GONE
 
         currentResultValue = value
