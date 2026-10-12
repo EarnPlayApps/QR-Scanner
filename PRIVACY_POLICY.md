@@ -11,7 +11,7 @@ The app requests camera permission only to scan QR codes and barcodes. Camera fr
 If you choose the Gallery feature, the selected image is used for barcode/QR scanning. QR Scanner does not intentionally upload the selected image to its own server.
 
 ## Scan History
-Scan history is stored locally on your device. You can delete individual entries or clear the history from the app.
+Scan history is stored locally on your device. You can clear all saved history from the app settings.
 
 ## Advertising
 QR Scanner uses Google AdMob for advertising. Google and its advertising partners may process information such as device identifiers, advertising-related information, diagnostics, and ad interaction data according to their policies and applicable settings.
