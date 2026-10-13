@@ -215,6 +215,7 @@ class MainActivity : AppCompatActivity() {
         if (isFinishing || isDestroyed) return
         scanningStarted = true
         findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
+        findViewById<AdView>(R.id.welcomeBannerAd).visibility = View.GONE
         findViewById<View>(R.id.resultScreen).visibility = View.GONE
         findViewById<View>(R.id.mainContent).visibility = View.VISIBLE
         findViewById<AdView>(R.id.bannerAd).visibility = if (scannerBannerLoaded) View.VISIBLE else View.GONE
@@ -273,6 +274,7 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 android.util.Log.i("QRScannerAds", "Mobile Ads initialized: $status")
+                requestBanner(findViewById(R.id.welcomeBannerAd), "welcome")
                 requestBanner(findViewById(R.id.bannerAd), "scanner")
                 requestBanner(findViewById(R.id.resultBannerAd), "result")
                 loadInterstitial()
