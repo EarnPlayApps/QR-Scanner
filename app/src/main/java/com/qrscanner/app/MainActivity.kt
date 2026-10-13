@@ -273,6 +273,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun retryAdsLater(retry: () -> Unit) {
+        // Avoid rapid retry loops during network outages or no-fill periods.
+        window.decorView.postDelayed({
+            if (!isFinishing && !isDestroyed && adsInitializationStarted) retry()
+        }, 60000L)
+    }
+
     private fun configureBannerAds() {
         val scannerBanner = findViewById<AdView>(R.id.bannerAd)
         val resultBanner = findViewById<AdView>(R.id.resultBannerAd)
@@ -355,10 +362,14 @@ class MainActivity : AppCompatActivity() {
                         nativeAdLoaded = false
                         findViewById<View>(R.id.nativeAdContainer).visibility = View.GONE
                         android.util.Log.w("QRScannerAds", "Native ad failed: ${error.code} ${error.message}")
+                        retryAdsLater { loadNativeAd() }
                     }
                 })
                 .build()
             loader.loadAd(AdRequest.Builder().build())
+        }.onFailure {
+            android.util.Log.e("QRScannerAds", "Native ad request error", it)
+            retryAdsLater { loadNativeAd() }
         }
     }
 
@@ -367,7 +378,11 @@ class MainActivity : AppCompatActivity() {
             InterstitialAd.load(this, "ca-app-pub-9940728659432865/6512238262", AdRequest.Builder().build(),
                 object : InterstitialAdLoadCallback() {
                     override fun onAdLoaded(ad: InterstitialAd) { interstitialAd = ad }
-                    override fun onAdFailedToLoad(e: LoadAdError) { interstitialAd = null }
+                    override fun onAdFailedToLoad(e: LoadAdError) {
+                        interstitialAd = null
+                        android.util.Log.w("QRScannerAds", "Interstitial failed: ${e.code} ${e.message}")
+                        retryAdsLater { loadInterstitial() }
+                    }
                 })
         }
     }
@@ -379,7 +394,12 @@ class MainActivity : AppCompatActivity() {
             AppOpenAd.load(this, "ca-app-pub-9940728659432865/9951869956", AdRequest.Builder().build(),
                 object : AppOpenAd.AppOpenAdLoadCallback() {
                     override fun onAdLoaded(ad: AppOpenAd) { appOpenLoading = false; appOpenAd = ad }
-                    override fun onAdFailedToLoad(e: LoadAdError) { appOpenLoading = false; appOpenAd = null }
+                    override fun onAdFailedToLoad(e: LoadAdError) {
+                        appOpenLoading = false
+                        appOpenAd = null
+                        android.util.Log.w("QRScannerAds", "App-open failed: ${e.code} ${e.message}")
+                        retryAdsLater { loadAppOpenAd() }
+                    }
                 })
         }.onFailure { appOpenLoading = false }
     }
@@ -668,6 +688,8 @@ class MainActivity : AppCompatActivity() {
                     override fun onAdFailedToLoad(error: LoadAdError) {
                         rewardedLoading = false
                         rewardedAd = null
+                        android.util.Log.w("QRScannerAds", "Rewarded failed: ${error.code} ${error.message}")
+                        retryAdsLater { loadRewardedAd() }
                     }
                 }
             )
