@@ -834,11 +834,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showQuickMenu() {
+        // Settings already has its own bottom-navigation button; keep this menu uncluttered.
         val choices = arrayOf(
             t("Mula Scan", "Start Scanning"),
             t("Pilih gambar dari galeri", "Choose image from Gallery"),
             t("Sejarah scan", "Scan History"),
-            t("Tetapan", "Settings"),
             t("Tonton iklan untuk +1 scan percuma", "Watch ad for +1 free scan"),
             t("Privasi & Polisi", "Privacy & Policy"),
             t("Pilihan privasi iklan", "Ad privacy choices")
@@ -850,10 +850,9 @@ class MainActivity : AppCompatActivity() {
                     0 -> beginScanning()
                     1 -> pickImage.launch("image/*")
                     2 -> showHistory()
-                    3 -> showSettings()
-                    4 -> showRewardedAd()
-                    5 -> showPrivacyPolicy()
-                    6 -> showAdPrivacyOptions()
+                    3 -> showRewardedAd()
+                    4 -> showPrivacyPolicy()
+                    5 -> showAdPrivacyOptions()
                 }
             }
             .setNegativeButton(t("Tutup", "Close"), null)
@@ -970,8 +969,13 @@ class MainActivity : AppCompatActivity() {
             background = ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_glass)
             setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ink))
             isAllCaps = false
-            minHeight = 0
-            setPadding(18, 0, 18, 0)
+            minHeight = 48
+            isAllCaps = false
+            setPadding(18, 8, 18, 8)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                48
+            ).apply { setMargins(0, 4, 0, 4) }
             setOnClickListener {
                 AlertDialog.Builder(this@MainActivity)
                     .setTitle(t("Padam Sejarah", "Clear History"))
