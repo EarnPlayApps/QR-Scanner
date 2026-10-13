@@ -117,9 +117,9 @@
             android:layout_width="match_parent"
             android:layout_height="54dp"
             android:layout_marginTop="24dp"
-            android:background="@drawable/bg_language"
+            android:background="@drawable/bg_primary"
             android:text="Mula Scan"
-            android:textColor="@color/orange"
+            android:textColor="@color/white"
             android:textSize="16sp"
             android:textStyle="bold"
             android:textAllCaps="false"
@@ -224,8 +224,10 @@
 
             <androidx.camera.view.PreviewView
                 android:id="@+id/preview"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="230dp"
+                android:layout_height="230dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_camera"
                 app:scaleType="fillCenter"/>
 
             <View
@@ -238,7 +240,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|center_horizontal"
-                android:layout_marginTop="28dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/bg_hint"
                 android:paddingStart="18dp"
                 android:paddingEnd="18dp"
@@ -250,14 +252,14 @@
                 android:textStyle="bold"/>
 
             <FrameLayout
-                android:layout_width="300dp"
-                android:layout_height="300dp"
+                android:layout_width="230dp"
+                android:layout_height="230dp"
                 android:layout_gravity="center">
 
                 <View
                     android:id="@+id/scanFrame"
-                    android:layout_width="280dp"
-                    android:layout_height="280dp"
+                    android:layout_width="210dp"
+                    android:layout_height="210dp"
                     android:layout_gravity="center"
                     android:background="@drawable/scan_frame"/>
 
@@ -268,7 +270,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|center_horizontal"
                 android:gravity="center"
-                android:layout_marginBottom="26dp"
+                android:layout_marginBottom="10dp"
                 android:orientation="horizontal">
 
                 <Button
