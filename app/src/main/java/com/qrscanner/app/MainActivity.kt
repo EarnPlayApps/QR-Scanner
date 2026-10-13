@@ -94,6 +94,7 @@ class MainActivity : AppCompatActivity() {
     private var appOpenShowing = false
     private var rewardedAd: RewardedAd? = null
     private var rewardedLoading = false
+    private var pendingRewardedShow = false
     private var nativeAdLoaded = false
     private var scannerBannerLoaded = false
     private var resultBannerLoaded = false
@@ -300,6 +301,10 @@ class MainActivity : AppCompatActivity() {
         if (isFinishing || isDestroyed || !adsInitializationStarted) return
         android.util.Log.i("QRScannerAds", "Requesting $slot banner")
         runCatching {
+            // Responsive anchored adaptive banner: width follows the actual phone screen.
+            val metrics = resources.displayMetrics
+            val widthDp = ((metrics.widthPixels / metrics.density).toInt() - 20).coerceAtLeast(320)
+            adView.adSize = AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, widthDp)
             adView.loadAd(AdRequest.Builder().build())
         }.onFailure {
             android.util.Log.e("QRScannerAds", "Could not request $slot banner", it)
@@ -756,6 +761,11 @@ class MainActivity : AppCompatActivity() {
                     override fun onAdLoaded(ad: RewardedAd) {
                         rewardedLoading = false
                         rewardedAd = ad
+                        android.util.Log.i("QRScannerAds", "Rewarded ad loaded successfully")
+                        if (pendingRewardedShow && !isFinishing && !isDestroyed) {
+                            pendingRewardedShow = false
+                            window.decorView.post { showRewardedAd() }
+                        }
                     }
                     override fun onAdFailedToLoad(error: LoadAdError) {
                         rewardedLoading = false
@@ -774,8 +784,13 @@ class MainActivity : AppCompatActivity() {
     private fun showRewardedAd() {
         val ad = rewardedAd
         if (ad == null) {
-            Toast.makeText(this, t("Iklan ganjaran belum tersedia.", "Rewarded ad is not ready yet."), Toast.LENGTH_SHORT).show()
-            loadRewardedAd()
+            pendingRewardedShow = true
+            if (!rewardedLoading) {
+                loadRewardedAd()
+                Toast.makeText(this, t("Sedang menyediakan iklan. Tunggu sebentar…", "Loading a rewarded ad. Please wait…"), Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, t("Iklan sedang dimuatkan. Tunggu sebentar…", "Ad is loading. Please wait…"), Toast.LENGTH_SHORT).show()
+            }
             return
         }
         rewardedAd = null
