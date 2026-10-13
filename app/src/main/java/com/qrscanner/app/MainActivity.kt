@@ -591,10 +591,9 @@ class MainActivity : AppCompatActivity() {
         runCatching { ad.show(this) }.onFailure { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
     }
 
-    @ExperimentalGetImage
+    @androidx.annotation.OptIn(markerClass = [ExperimentalGetImage::class])
     private fun getMediaImage(proxy: ImageProxy): android.media.Image? = proxy.image
 
-    @ExperimentalGetImage
     private fun startCamera() {
         if (isFinishing || isDestroyed) return
         if (!::preview.isInitialized) return
