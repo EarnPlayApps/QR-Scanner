@@ -231,40 +231,50 @@ class MainActivity : AppCompatActivity() {
     private fun setupAds() {
         val consentInformation = UserMessagingPlatform.getConsentInformation(this)
         val consentParameters = ConsentRequestParameters.Builder().build()
+        android.util.Log.i("QRScannerAds", "Starting UMP consent update")
 
-        // Refresh consent status and display Google's consent form when required
-        // before requesting any ads.
+        // Always respect Google's consent decision; never bypass UMP to force an ad request.
         consentInformation.requestConsentInfoUpdate(
             this,
             consentParameters,
             {
-                UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) { _ ->
-                    initializeAdsIfAllowed(consentInformation.canRequestAds())
+                android.util.Log.i("QRScannerAds", "UMP update success; canRequestAds=${consentInformation.canRequestAds()}")
+                UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) { formError ->
+                    if (formError != null) {
+                        android.util.Log.w("QRScannerAds", "UMP consent form: ${formError.errorCode} ${formError.message}")
+                    }
+                    val allowed = consentInformation.canRequestAds()
+                    android.util.Log.i("QRScannerAds", "UMP form finished; canRequestAds=$allowed")
+                    initializeAdsIfAllowed(allowed)
                 }
             },
-            {
-                // A previously valid consent choice may still permit ad requests
-                // if the consent-information refresh cannot complete.
+            { formError ->
+                android.util.Log.w("QRScannerAds", "UMP update failed: ${formError.errorCode} ${formError.message}; canRequestAds=${consentInformation.canRequestAds()}")
                 initializeAdsIfAllowed(consentInformation.canRequestAds())
             }
         )
 
-        // The SDK permits requests immediately when a valid choice is already stored.
+        // A previous valid consent choice may already allow ads while the refresh runs.
         if (consentInformation.canRequestAds()) {
+            android.util.Log.i("QRScannerAds", "Stored consent allows ad requests")
             initializeAdsIfAllowed(true)
         }
     }
 
     private fun initializeAdsIfAllowed(canRequestAds: Boolean) {
-        if (!canRequestAds || adsInitializationStarted || isFinishing || isDestroyed) return
+        if (!canRequestAds) {
+            android.util.Log.w("QRScannerAds", "Ads not initialized: UMP says ad requests are not allowed yet")
+            return
+        }
+        if (adsInitializationStarted || isFinishing || isDestroyed) return
         adsInitializationStarted = true
-        MobileAds.initialize(this) {
+        android.util.Log.i("QRScannerAds", "Initializing Google Mobile Ads SDK")
+        MobileAds.initialize(this) { status ->
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
-                runCatching {
-                    findViewById<AdView>(R.id.bannerAd).loadAd(AdRequest.Builder().build())
-                    findViewById<AdView>(R.id.resultBannerAd).loadAd(AdRequest.Builder().build())
-                }
+                android.util.Log.i("QRScannerAds", "Mobile Ads initialized: $status")
+                requestBanner(findViewById(R.id.bannerAd), "scanner")
+                requestBanner(findViewById(R.id.resultBannerAd), "result")
                 loadInterstitial()
                 loadAppOpenAd()
                 loadNativeAd()
@@ -273,8 +283,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun requestBanner(adView: AdView, slot: String) {
+        if (isFinishing || isDestroyed || !adsInitializationStarted) return
+        android.util.Log.i("QRScannerAds", "Requesting $slot banner")
+        runCatching {
+            adView.loadAd(AdRequest.Builder().build())
+        }.onFailure {
+            android.util.Log.e("QRScannerAds", "Could not request $slot banner", it)
+            retryAdsLater { requestBanner(adView, slot) }
+        }
+    }
+
     private fun retryAdsLater(retry: () -> Unit) {
-        // Avoid rapid retry loops during network outages or no-fill periods.
+        // Avoid rapid retry loops during outages/no-fill; retry at most once per minute per failure.
         window.decorView.postDelayed({
             if (!isFinishing && !isDestroyed && adsInitializationStarted) retry()
         }, 60000L)
@@ -286,23 +307,27 @@ class MainActivity : AppCompatActivity() {
         scannerBanner.adListener = object : AdListener() {
             override fun onAdLoaded() {
                 scannerBannerLoaded = true
+                android.util.Log.i("QRScannerAds", "Scanner banner loaded successfully")
                 scannerBanner.visibility = if (findViewById<View>(R.id.mainContent).visibility == View.VISIBLE) View.VISIBLE else View.GONE
             }
             override fun onAdFailedToLoad(error: LoadAdError) {
                 scannerBannerLoaded = false
                 scannerBanner.visibility = View.GONE
-                android.util.Log.w("QRScannerAds", "Scanner banner failed: ${error.code} ${error.message}")
+                android.util.Log.w("QRScannerAds", "Scanner banner failed: code=${error.code}, domain=${error.domain}, message=${error.message}, response=${error.responseInfo}")
+                retryAdsLater { requestBanner(scannerBanner, "scanner") }
             }
         }
         resultBanner.adListener = object : AdListener() {
             override fun onAdLoaded() {
                 resultBannerLoaded = true
+                android.util.Log.i("QRScannerAds", "Result banner loaded successfully")
                 resultBanner.visibility = if (findViewById<View>(R.id.resultScreen).visibility == View.VISIBLE) View.VISIBLE else View.GONE
             }
             override fun onAdFailedToLoad(error: LoadAdError) {
                 resultBannerLoaded = false
                 resultBanner.visibility = View.GONE
-                android.util.Log.w("QRScannerAds", "Result banner failed: ${error.code} ${error.message}")
+                android.util.Log.w("QRScannerAds", "Result banner failed: code=${error.code}, domain=${error.domain}, message=${error.message}, response=${error.responseInfo}")
+                retryAdsLater { requestBanner(resultBanner, "result") }
             }
         }
     }
