@@ -14,7 +14,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
-import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
@@ -91,6 +90,7 @@ class MainActivity : AppCompatActivity() {
     private var appOpenShowing = false
     private var rewardedAd: RewardedAd? = null
     private var rewardedLoading = false
+    private var rewardedPendingShow = false
     private var nativeAd: NativeAd? = null
     private var nativeAdLoaded = false
     private var nativeAdLoading = false
@@ -905,6 +905,10 @@ class MainActivity : AppCompatActivity() {
                         rewardedLoading = false
                         rewardedAd = ad
                         android.util.Log.i("QRScannerAds", "Rewarded ad loaded successfully")
+                        if (rewardedPendingShow && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                            rewardedPendingShow = false
+                            window.decorView.post { if (!isFinishing && !isDestroyed) showRewardedAd() }
+                        }
                     }
                     override fun onAdFailedToLoad(error: LoadAdError) {
                         rewardedLoading = false
@@ -925,7 +929,8 @@ class MainActivity : AppCompatActivity() {
     private fun showRewardedAd() {
         val ad = rewardedAd
         if (ad == null) {
-            Toast.makeText(this, t("Iklan ganjaran belum tersedia.", "Rewarded ad is not ready yet."), Toast.LENGTH_SHORT).show()
+            rewardedPendingShow = true
+            Toast.makeText(this, t("Iklan sedang disediakan. Tunggu sebentar.", "Preparing the rewarded ad. Please wait."), Toast.LENGTH_SHORT).show()
             loadRewardedAd()
             return
         }
@@ -1218,6 +1223,11 @@ class MainActivity : AppCompatActivity() {
             showAppOpenIfReady()
         }
         firstLaunch = false
+        if (rewardedPendingShow && rewardedAd != null &&
+            lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            rewardedPendingShow = false
+            window.decorView.post { if (!isFinishing && !isDestroyed) showRewardedAd() }
+        }
         if (::preview.isInitialized &&
             findViewById<View>(R.id.resultScreen).visibility != View.VISIBLE &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
