@@ -539,7 +539,7 @@
                     android:layout_height="54dp"
                     android:padding="13dp"
                     android:src="@drawable/ic_qr_small"
-                    android:tint="@color/white"
+                    app:tint="@color/white"
                     android:background="@drawable/bg_primary"
                     android:contentDescription="QR"/>
 
