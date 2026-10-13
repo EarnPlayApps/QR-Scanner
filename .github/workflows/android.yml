@@ -30,12 +30,12 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: "platform-tools platforms;android-36 build-tools;35.0.0"
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.13"
+          gradle-version: "9.6.0"
 
       - name: Verify toolchain
         run: |
@@ -45,6 +45,9 @@ jobs:
 
       - name: Build Debug APK
         run: gradle :app:assembleDebug --stacktrace --warning-mode all
+
+      - name: Run Android lint
+        run: gradle :app:lintDebug --stacktrace --warning-mode all
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
