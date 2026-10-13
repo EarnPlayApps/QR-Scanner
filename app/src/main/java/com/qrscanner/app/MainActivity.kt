@@ -17,6 +17,8 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
@@ -69,7 +71,8 @@ class MainActivity : AppCompatActivity() {
     }
     private val scanner by scannerDelegate
     private val prefs by lazy { getSharedPreferences("qr_scanner", MODE_PRIVATE) }
-    private var locked = false
+    @Volatile private var locked = false
+    @Volatile private var processingFrame = false
     private var torchOn = false
     private var soundEnabled = true
     private var vibrationEnabled = true
@@ -80,12 +83,20 @@ class MainActivity : AppCompatActivity() {
     private var scanCount = 0
     private var languageMs = true
     private var interstitialAd: InterstitialAd? = null
+    private var interstitialLoading = false
+    private var fullScreenAdShowing = false
     private var appOpenAd: AppOpenAd? = null
     private var appOpenLoading = false
     private var appOpenShowing = false
     private var rewardedAd: RewardedAd? = null
     private var rewardedLoading = false
+    private var rewardedPendingShow = false
+    private var nativeAd: NativeAd? = null
     private var nativeAdLoaded = false
+    private var nativeAdLoading = false
+    private var welcomeBannerRequested = false
+    private var scannerBannerRequested = false
+    private var resultBannerRequested = false
     private var scannerBannerLoaded = false
     private var resultBannerLoaded = false
     private var freeScanCredits = 0
@@ -119,6 +130,15 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         setContentView(R.layout.activity_main)
+        val rootContainer = findViewById<View>(R.id.rootContainer)
+        ViewCompat.setOnApplyWindowInsetsListener(rootContainer) { view, insets ->
+            val systemBars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+        ViewCompat.requestApplyInsets(rootContainer)
         preview = findViewById(R.id.preview)
         permissionButton = findViewById(R.id.permissionButton)
         cameraMessage = findViewById(R.id.cameraMessage)
@@ -135,10 +155,14 @@ class MainActivity : AppCompatActivity() {
         // Let the first screen render before initializing consent/ads SDKs.
         // An SDK initialization problem must never close the scanner on launch.
         window.decorView.post {
-            if (!isFinishing && !isDestroyed) runCatching { setupAds() }
+            if (!isFinishing && !isDestroyed) {
+                runCatching { setupAds() }.onFailure {
+                    android.util.Log.e("QRScannerAds", "Ad consent/initialization setup failed", it)
+                }
+            }
         }
 
-        findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
+        findViewById<Button>(R.id.startScanButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
         findViewById<Button>(R.id.settingsButton).apply {
             isClickable = true
             isFocusable = true
@@ -156,14 +180,14 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, t("Keputusan telah disimpan ke sejarah.", "Result saved to history."), Toast.LENGTH_SHORT).show()
             }
         }
-        findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
-        findViewById<Button>(R.id.resultBackButton).setOnClickListener { maybeShowInterstitial(); beginScanning() }
-        findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { maybeShowInterstitial(); beginScanning() }
-        findViewById<Button>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
+        findViewById<Button>(R.id.galleryButton).setOnClickListener { launchGallery() }
+        findViewById<Button>(R.id.resultBackButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
+        findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
+        findViewById<Button>(R.id.bottomScanButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
         findViewById<Button>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
         findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
         findViewById<Button>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
-        scanAgainButton.setOnClickListener { startCamera() }
+        scanAgainButton.setOnClickListener { maybeShowInterstitial { beginScanning() } }
         configureBannerAds()
         permissionButton.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -209,6 +233,9 @@ class MainActivity : AppCompatActivity() {
             isAllCaps = false
         }
         findViewById<TextView>(R.id.welcomeTagline).text = if (languageMs) "Imbas Dunia Dengan Lebih Bijak" else "Scan a Smarter World"
+        findViewById<TextView>(R.id.flashLabel).text = if (languageMs) "Flash" else "Flashlight"
+        findViewById<TextView>(R.id.galleryLabel).text = if (languageMs) "Galeri" else "Gallery"
+        permissionButton.text = if (languageMs) "Benarkan Kamera" else "Allow Camera"
     }
 
     private fun beginScanning() {
@@ -222,6 +249,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<AdView>(R.id.bannerAd).visibility = if (scannerBannerLoaded) View.VISIBLE else View.GONE
         findViewById<View>(R.id.scannerAdLabel).visibility = if (scannerBannerLoaded) View.VISIBLE else View.GONE
         findViewById<View>(R.id.nativeAdContainer).visibility = View.GONE
+        if (adsInitializationStarted && !scannerBannerRequested) requestBanner(findViewById(R.id.bannerAd), "scanner")
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             permissionButton.visibility = View.GONE
             preview.post { startCamera() }
@@ -242,13 +270,18 @@ class MainActivity : AppCompatActivity() {
             consentParameters,
             {
                 android.util.Log.i("QRScannerAds", "UMP update success; canRequestAds=${consentInformation.canRequestAds()}")
-                UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) { formError ->
-                    if (formError != null) {
-                        android.util.Log.w("QRScannerAds", "UMP consent form: ${formError.errorCode} ${formError.message}")
+                runCatching {
+                    UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) { formError ->
+                        if (formError != null) {
+                            android.util.Log.w("QRScannerAds", "UMP consent form: ${formError.errorCode} ${formError.message}")
+                        }
+                        val allowed = consentInformation.canRequestAds()
+                        android.util.Log.i("QRScannerAds", "UMP form finished; canRequestAds=$allowed")
+                        initializeAdsIfAllowed(allowed)
                     }
-                    val allowed = consentInformation.canRequestAds()
-                    android.util.Log.i("QRScannerAds", "UMP form finished; canRequestAds=$allowed")
-                    initializeAdsIfAllowed(allowed)
+                }.onFailure {
+                    android.util.Log.e("QRScannerAds", "Could not present UMP consent form", it)
+                    initializeAdsIfAllowed(consentInformation.canRequestAds())
                 }
             },
             { formError ->
@@ -272,28 +305,71 @@ class MainActivity : AppCompatActivity() {
         if (adsInitializationStarted || isFinishing || isDestroyed) return
         adsInitializationStarted = true
         android.util.Log.i("QRScannerAds", "Initializing Google Mobile Ads SDK")
-        MobileAds.initialize(this) { status ->
-            runOnUiThread {
-                if (isFinishing || isDestroyed) return@runOnUiThread
-                android.util.Log.i("QRScannerAds", "Mobile Ads initialized: $status")
-                requestBanner(findViewById(R.id.welcomeBannerAd), "welcome")
-                requestBanner(findViewById(R.id.bannerAd), "scanner")
-                requestBanner(findViewById(R.id.resultBannerAd), "result")
-                loadInterstitial()
-                loadAppOpenAd()
-                loadNativeAd()
-                loadRewardedAd()
+        runCatching {
+            MobileAds.initialize(this) { status ->
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    android.util.Log.i("QRScannerAds", "Mobile Ads initialized: $status")
+                    when {
+                        findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE -> requestBanner(findViewById(R.id.welcomeBannerAd), "welcome")
+                        findViewById<View>(R.id.mainContent).visibility == View.VISIBLE -> requestBanner(findViewById(R.id.bannerAd), "scanner")
+                        findViewById<View>(R.id.resultScreen).visibility == View.VISIBLE -> {
+                            requestBanner(findViewById(R.id.resultBannerAd), "result")
+                            loadNativeAd()
+                        }
+                    }
+                    loadInterstitial()
+                    loadAppOpenAd()
+                    loadRewardedAd()
+                }
             }
+        }.onFailure {
+            adsInitializationStarted = false
+            android.util.Log.e("QRScannerAds", "Mobile Ads SDK initialization failed", it)
+            retryAdsLater { initializeAdsIfAllowed(true) }
+        }
+    }
+
+    private fun adUnitId(format: String): String {
+        // Debug APKs use Google demo units so every format can be verified safely.
+        // CI validation note: use ApplicationInfo.FLAG_DEBUGGABLE instead of BuildConfig.
+        // Release APKs use the publisher's production units.
+        val test = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        return when (format) {
+            "banner" -> if (test) "ca-app-pub-3940256099942544/6300978111" else "ca-app-pub-9940728659432865/2764564944"
+            "native" -> if (test) "ca-app-pub-3940256099942544/2247696110" else "ca-app-pub-9940728659432865/2572993259"
+            "interstitial" -> if (test) "ca-app-pub-3940256099942544/1033173712" else "ca-app-pub-9940728659432865/6512238262"
+            "app_open" -> if (test) "ca-app-pub-3940256099942544/9257395921" else "ca-app-pub-9940728659432865/9951869956"
+            "rewarded" -> if (test) "ca-app-pub-3940256099942544/5224354917" else "ca-app-pub-9940728659432865/7753257039"
+            else -> error("Unknown ad format: $format")
         }
     }
 
     private fun requestBanner(adView: AdView, slot: String) {
         if (isFinishing || isDestroyed || !adsInitializationStarted) return
-        android.util.Log.i("QRScannerAds", "Requesting $slot banner")
+        val alreadyRequested = when (slot) {
+            "welcome" -> welcomeBannerRequested
+            "scanner" -> scannerBannerRequested
+            "result" -> resultBannerRequested
+            else -> false
+        }
+        if (alreadyRequested) return
+        when (slot) {
+            "welcome" -> welcomeBannerRequested = true
+            "scanner" -> scannerBannerRequested = true
+            "result" -> resultBannerRequested = true
+        }
+        adView.adUnitId = adUnitId("banner")
+        android.util.Log.i("QRScannerAds", "Requesting $slot banner; debugTestAds=${(applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0}")
         runCatching {
             adView.loadAd(AdRequest.Builder().build())
         }.onFailure {
             android.util.Log.e("QRScannerAds", "Could not request $slot banner", it)
+            when (slot) {
+                "welcome" -> welcomeBannerRequested = false
+                "scanner" -> scannerBannerRequested = false
+                "result" -> resultBannerRequested = false
+            }
             retryAdsLater { requestBanner(adView, slot) }
         }
     }
@@ -317,6 +393,7 @@ class MainActivity : AppCompatActivity() {
                 findViewById<View>(R.id.welcomeAdLabel).visibility = if (visible) View.VISIBLE else View.GONE
             }
             override fun onAdFailedToLoad(error: LoadAdError) {
+                welcomeBannerRequested = false
                 welcomeBanner.visibility = View.GONE
                 findViewById<View>(R.id.welcomeAdLabel).visibility = View.GONE
                 android.util.Log.w("QRScannerAds", "Welcome banner failed: code=" + error.code + ", domain=" + error.domain + ", message=" + error.message)
@@ -332,6 +409,7 @@ class MainActivity : AppCompatActivity() {
                 findViewById<View>(R.id.scannerAdLabel).visibility = if (visible) View.VISIBLE else View.GONE
             }
             override fun onAdFailedToLoad(error: LoadAdError) {
+                scannerBannerRequested = false
                 scannerBannerLoaded = false
                 scannerBanner.visibility = View.GONE
                 findViewById<View>(R.id.scannerAdLabel).visibility = View.GONE
@@ -348,6 +426,7 @@ class MainActivity : AppCompatActivity() {
                 findViewById<View>(R.id.resultAdLabel).visibility = if (visible) View.VISIBLE else View.GONE
             }
             override fun onAdFailedToLoad(error: LoadAdError) {
+                resultBannerRequested = false
                 resultBannerLoaded = false
                 resultBanner.visibility = View.GONE
                 findViewById<View>(R.id.resultAdLabel).visibility = View.GONE
@@ -358,10 +437,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadNativeAd() {
+        if (nativeAdLoading || nativeAdLoaded || isFinishing || isDestroyed) return
+        nativeAdLoading = true
         runCatching {
             val adView = findViewById<NativeAdView>(R.id.nativeAdView)
-            val loader = AdLoader.Builder(this, "ca-app-pub-9940728659432865/2572993259")
+            val loader = AdLoader.Builder(this, adUnitId("native"))
                 .forNativeAd { ad: NativeAd ->
+                    nativeAdLoading = false
                     if (isFinishing || isDestroyed) {
                         ad.destroy()
                         return@forNativeAd
@@ -396,7 +478,9 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     adView.setNativeAd(ad)
+                    nativeAd = ad
                     nativeAdLoaded = true
+                    android.util.Log.i("QRScannerAds", "Native ad loaded successfully")
                     // Only reserve space for a native ad after a real ad has loaded.
                     val resultScreen = findViewById<View>(R.id.resultScreen)
                     findViewById<View>(R.id.nativeAdContainer).visibility =
@@ -409,6 +493,7 @@ class MainActivity : AppCompatActivity() {
                 )
                 .withAdListener(object : AdListener() {
                     override fun onAdFailedToLoad(error: LoadAdError) {
+                        nativeAdLoading = false
                         nativeAdLoaded = false
                         findViewById<View>(R.id.nativeAdContainer).visibility = View.GONE
                         android.util.Log.w("QRScannerAds", "Native ad failed: ${error.code} ${error.message}")
@@ -418,22 +503,35 @@ class MainActivity : AppCompatActivity() {
                 .build()
             loader.loadAd(AdRequest.Builder().build())
         }.onFailure {
+            nativeAdLoading = false
             android.util.Log.e("QRScannerAds", "Native ad request error", it)
             retryAdsLater { loadNativeAd() }
         }
     }
 
     private fun loadInterstitial() {
+        if (interstitialLoading || interstitialAd != null || isFinishing || isDestroyed) return
+        interstitialLoading = true
         runCatching {
-            InterstitialAd.load(this, "ca-app-pub-9940728659432865/6512238262", AdRequest.Builder().build(),
+            InterstitialAd.load(this, adUnitId("interstitial"), AdRequest.Builder().build(),
                 object : InterstitialAdLoadCallback() {
-                    override fun onAdLoaded(ad: InterstitialAd) { interstitialAd = ad }
+                    override fun onAdLoaded(ad: InterstitialAd) {
+                        interstitialLoading = false
+                        if (isFinishing || isDestroyed) return
+                        interstitialAd = ad
+                        android.util.Log.i("QRScannerAds", "Interstitial loaded successfully")
+                    }
                     override fun onAdFailedToLoad(e: LoadAdError) {
+                        interstitialLoading = false
                         interstitialAd = null
                         android.util.Log.w("QRScannerAds", "Interstitial failed: ${e.code} ${e.message}")
                         retryAdsLater { loadInterstitial() }
                     }
                 })
+        }.onFailure {
+            interstitialLoading = false
+            android.util.Log.e("QRScannerAds", "Interstitial request threw an exception", it)
+            retryAdsLater { loadInterstitial() }
         }
     }
 
@@ -441,9 +539,13 @@ class MainActivity : AppCompatActivity() {
         if (appOpenLoading || appOpenAd != null) return
         appOpenLoading = true
         runCatching {
-            AppOpenAd.load(this, "ca-app-pub-9940728659432865/9951869956", AdRequest.Builder().build(),
+            AppOpenAd.load(this, adUnitId("app_open"), AdRequest.Builder().build(),
                 object : AppOpenAd.AppOpenAdLoadCallback() {
-                    override fun onAdLoaded(ad: AppOpenAd) { appOpenLoading = false; appOpenAd = ad }
+                    override fun onAdLoaded(ad: AppOpenAd) {
+                        appOpenLoading = false
+                        appOpenAd = ad
+                        android.util.Log.i("QRScannerAds", "App-open ad loaded successfully")
+                    }
                     override fun onAdFailedToLoad(e: LoadAdError) {
                         appOpenLoading = false
                         appOpenAd = null
@@ -451,12 +553,18 @@ class MainActivity : AppCompatActivity() {
                         retryAdsLater { loadAppOpenAd() }
                     }
                 })
-        }.onFailure { appOpenLoading = false }
+        }.onFailure {
+            appOpenLoading = false
+            android.util.Log.e("QRScannerAds", "App-open request threw an exception", it)
+            retryAdsLater { loadAppOpenAd() }
+        }
     }
 
     private fun showAppOpenIfReady() {
         val now = System.currentTimeMillis()
-        if (firstLaunch || appOpenShowing || isFinishing || isDestroyed) return
+        if (firstLaunch || appOpenShowing || fullScreenAdShowing || isFinishing || isDestroyed) return
+        // App-open ads belong on the launch/loading screen, not over an active scan result.
+        if (findViewById<View>(R.id.welcomeScreen).visibility != View.VISIBLE) return
         if (appOpenReturnCount < 1) return
 
         // Keep app-open ads occasional: no more than three per local day and
@@ -483,11 +591,14 @@ class MainActivity : AppCompatActivity() {
         runCatching { ad.show(this) }.onFailure { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
     }
 
+    @androidx.annotation.OptIn(markerClass = [ExperimentalGetImage::class])
+    private fun getMediaImage(proxy: ImageProxy): android.media.Image? = proxy.image
+
     private fun startCamera() {
         if (isFinishing || isDestroyed) return
         if (!::preview.isInitialized) return
         locked = false
-        scanAgainButton.visibility = View.GONE
+        scanAgainButton.visibility = View.VISIBLE
         cameraMessage.text = t("Letak QR atau barcode dalam bingkai", "Place a QR code or barcode inside the frame")
         statusText.text = t("Kamera aktif — sedang mengimbas", "Camera active — scanning")
         val future = ProcessCameraProvider.getInstance(this)
@@ -502,31 +613,44 @@ class MainActivity : AppCompatActivity() {
                     .build()
 
                 analysis.setAnalyzer(executor) { proxy ->
-                    if (locked || isFinishing || isDestroyed) { runCatching { proxy.close() }; return@setAnalyzer }
-                    val image = proxy.image
-                    if (image == null) { proxy.close(); return@setAnalyzer }
+                    if (locked || processingFrame || isFinishing || isDestroyed) {
+                        runCatching { proxy.close() }
+                        return@setAnalyzer
+                    }
+                    val image = getMediaImage(proxy)
+                    if (image == null) { runCatching { proxy.close() }; return@setAnalyzer }
                     val input = runCatching { InputImage.fromMediaImage(image, proxy.imageInfo.rotationDegrees) }.getOrNull()
-                    if (input == null) { proxy.close(); return@setAnalyzer }
-                    scanner.process(input)
-                        .addOnSuccessListener { codes ->
-                            val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() } ?: return@addOnSuccessListener
-                            if (locked || isFinishing || isDestroyed) return@addOnSuccessListener
-                            locked = true
-                            val value = first.rawValue.orEmpty()
-                            val format = formatName(first.format)
-                            if (isFinishing || isDestroyed) {
-                                locked = false
-                                return@addOnSuccessListener
-                            }
-                            runOnUiThread {
-                                if (!isFinishing && !isDestroyed && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
-                                    showScanResult(value, format)
-                                } else {
+                    if (input == null) { runCatching { proxy.close() }; return@setAnalyzer }
+                    processingFrame = true
+                    try {
+                        scanner.process(input)
+                            .addOnSuccessListener { codes ->
+                                val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() } ?: return@addOnSuccessListener
+                                if (locked || isFinishing || isDestroyed) return@addOnSuccessListener
+                                locked = true
+                                val value = first.rawValue.orEmpty()
+                                val format = formatName(first.format)
+                                if (isFinishing || isDestroyed) {
                                     locked = false
+                                    return@addOnSuccessListener
+                                }
+                                runOnUiThread {
+                                    if (!isFinishing && !isDestroyed && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                                        showScanResult(value, format)
+                                    } else {
+                                        locked = false
+                                    }
                                 }
                             }
-                        }
-                        .addOnCompleteListener { runCatching { proxy.close() } }
+                            .addOnCompleteListener {
+                                processingFrame = false
+                                runCatching { proxy.close() }
+                            }
+                    } catch (e: Exception) {
+                        processingFrame = false
+                        runCatching { proxy.close() }
+                        android.util.Log.e("QRScannerCamera", "Could not process camera frame", e)
+                    }
                 }
 
                 p.unbindAll()
@@ -558,8 +682,8 @@ class MainActivity : AppCompatActivity() {
             showResult(value, format)
         }.onFailure {
             locked = false
-            statusText.text = "Keputusan scan tidak dapat dipaparkan."
-            Toast.makeText(this, "Keputusan scan tidak dapat dipaparkan.", Toast.LENGTH_SHORT).show()
+            statusText.text = t("Keputusan scan tidak dapat dipaparkan.", "Could not display the scan result.")
+            Toast.makeText(this, t("Keputusan scan tidak dapat dipaparkan.", "Could not display the scan result."), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -595,7 +719,7 @@ class MainActivity : AppCompatActivity() {
     private fun scanImage(uri: Uri) {
         if (isFinishing || isDestroyed) return
         runCatching { provider?.unbindAll(); provider = null; camera = null }.onFailure { }
-        statusText.text = "Mengimbas gambar..."
+        statusText.text = t("Mengimbas gambar...", "Scanning image...")
         val input = runCatching { InputImage.fromFilePath(this, uri) }.getOrNull()
         if (input == null) {
             statusText.text = t("Gambar tidak dapat dibuka.", "Unable to open image.")
@@ -603,22 +727,30 @@ class MainActivity : AppCompatActivity() {
             resumeCameraAfterGalleryFailure()
             return
         }
-        scanner.process(input)
-            .addOnSuccessListener { codes ->
-                val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() }
-                if (first == null) {
-                    statusText.text = t("Tiada QR/barcode ditemui.", "No QR/barcode found.")
-                    Toast.makeText(this, t("Tiada QR/barcode ditemui dalam gambar.", "No QR/barcode found in image."), Toast.LENGTH_SHORT).show()
-                    resumeCameraAfterGalleryFailure()
-                } else {
-                    runOnUiThread { showScanResult(first.rawValue.orEmpty(), formatName(first.format)) }
-                }
-            }
-            .addOnFailureListener {
-                statusText.text = t("Gagal mengimbas gambar.", "Failed to scan image.")
-                Toast.makeText(this, t("Gambar tidak dapat diimbas.", "Unable to scan image."), Toast.LENGTH_SHORT).show()
+        val task = try {
+            scanner.process(input)
+        } catch (e: Exception) {
+            android.util.Log.e("QRScannerGallery", "Could not start image scan", e)
+            statusText.text = t("Gagal mengimbas gambar.", "Failed to scan image.")
+            Toast.makeText(this, t("Gambar tidak dapat diimbas.", "Unable to scan image."), Toast.LENGTH_SHORT).show()
+            resumeCameraAfterGalleryFailure()
+            return
+        }
+        task.addOnSuccessListener { codes ->
+            val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() }
+            if (first == null) {
+                statusText.text = t("Tiada QR/barcode ditemui.", "No QR/barcode found.")
+                Toast.makeText(this, t("Tiada QR/barcode ditemui dalam gambar.", "No QR/barcode found in image."), Toast.LENGTH_SHORT).show()
                 resumeCameraAfterGalleryFailure()
+            } else {
+                runOnUiThread { showScanResult(first.rawValue.orEmpty(), formatName(first.format)) }
             }
+        }.addOnFailureListener {
+            android.util.Log.e("QRScannerGallery", "Image scan task failed", it)
+            statusText.text = t("Gagal mengimbas gambar.", "Failed to scan image.")
+            Toast.makeText(this, t("Gambar tidak dapat diimbas.", "Unable to scan image."), Toast.LENGTH_SHORT).show()
+            resumeCameraAfterGalleryFailure()
+        }
     }
 
     private fun resumeCameraAfterGalleryFailure() {
@@ -635,6 +767,10 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.resultScreen).visibility = View.VISIBLE
         findViewById<View>(R.id.resultAdLabel).visibility = if (resultBannerLoaded) View.VISIBLE else View.GONE
         findViewById<View>(R.id.nativeAdContainer).visibility = if (nativeAdLoaded) View.VISIBLE else View.GONE
+        if (adsInitializationStarted) {
+            if (!resultBannerRequested) requestBanner(findViewById(R.id.resultBannerAd), "result")
+            if (!nativeAdLoaded && !nativeAdLoading) loadNativeAd()
+        }
         findViewById<AdView>(R.id.resultBannerAd).visibility = if (resultBannerLoaded) View.VISIBLE else View.GONE
         findViewById<AdView>(R.id.bannerAd).visibility = View.GONE
 
@@ -693,10 +829,22 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun maybeShowInterstitial() {
-        if (scansSinceInterstitial < 5 || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
-        if (System.currentTimeMillis() - prefs.getLong("last_interstitial_at", 0L) < 300000L) return
+    private fun launchGallery() {
+        maybeShowInterstitial { pickImage.launch("image/*") }
+    }
 
+    private fun maybeShowInterstitial(onContinue: () -> Unit) {
+        if (scansSinceInterstitial < 5 ||
+            !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            onContinue()
+            return
+        }
+        if (System.currentTimeMillis() - prefs.getLong("last_interstitial_at", 0L) < 300000L) {
+            onContinue()
+            return
+        }
+
+        // A rewarded credit replaces the next interstitial opportunity.
         if (freeScanCredits > 0) {
             freeScanCredits--
             scansSinceInterstitial = 0
@@ -704,22 +852,58 @@ class MainActivity : AppCompatActivity() {
                 .putInt("free_scan_credits", freeScanCredits)
                 .putInt("scans_since_interstitial", scansSinceInterstitial)
                 .apply()
+            onContinue()
             return
         }
 
-        val ad = interstitialAd ?: return
+        val ad = interstitialAd
+        if (ad == null) {
+            // Keep the scan counter so the next user-initiated transition can try again.
+            loadInterstitial()
+            onContinue()
+            return
+        }
+
         interstitialAd = null
+        var continued = false
+        fun continueOnce() {
+            if (!continued) {
+                continued = true
+                onContinue()
+            }
+        }
+
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-            override fun onAdDismissedFullScreenContent() { loadInterstitial() }
-            override fun onAdFailedToShowFullScreenContent(error: AdError) { loadInterstitial() }
+            override fun onAdShowedFullScreenContent() {
+                // Only reset the scan cycle after an impression is actually shown.
+                scansSinceInterstitial = 0
+                prefs.edit()
+                    .putInt("scans_since_interstitial", scansSinceInterstitial)
+                    .putLong("last_interstitial_at", System.currentTimeMillis())
+                    .apply()
+                android.util.Log.i("QRScannerAds", "Interstitial displayed")
+            }
+            override fun onAdDismissedFullScreenContent() {
+                fullScreenAdShowing = false
+                loadInterstitial()
+                continueOnce()
+            }
+            override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                fullScreenAdShowing = false
+                android.util.Log.w("QRScannerAds", "Interstitial failed to show: ${error.message}")
+                loadInterstitial()
+                continueOnce()
+            }
         }
         runCatching {
+            fullScreenAdShowing = true
             ad.show(this)
-            scansSinceInterstitial = 0
-            prefs.edit().putInt("scans_since_interstitial", scansSinceInterstitial).putLong("last_interstitial_at", System.currentTimeMillis()).apply()
         }.onFailure {
+            android.util.Log.e("QRScannerAds", "Could not show interstitial", it)
+            fullScreenAdShowing = false
             interstitialAd = null
             loadInterstitial()
+            continueOnce()
         }
     }
 
@@ -729,12 +913,17 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             RewardedAd.load(
                 this,
-                "ca-app-pub-9940728659432865/7753257039",
+                adUnitId("rewarded"),
                 AdRequest.Builder().build(),
                 object : RewardedAdLoadCallback() {
                     override fun onAdLoaded(ad: RewardedAd) {
                         rewardedLoading = false
                         rewardedAd = ad
+                        android.util.Log.i("QRScannerAds", "Rewarded ad loaded successfully")
+                        if (rewardedPendingShow && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                            rewardedPendingShow = false
+                            window.decorView.post { if (!isFinishing && !isDestroyed) showRewardedAd() }
+                        }
                     }
                     override fun onAdFailedToLoad(error: LoadAdError) {
                         rewardedLoading = false
@@ -747,29 +936,36 @@ class MainActivity : AppCompatActivity() {
         }.onFailure {
             rewardedLoading = false
             rewardedAd = null
+            android.util.Log.e("QRScannerAds", "Rewarded request threw an exception", it)
+            retryAdsLater { loadRewardedAd() }
         }
     }
 
     private fun showRewardedAd() {
         val ad = rewardedAd
         if (ad == null) {
-            Toast.makeText(this, t("Iklan ganjaran belum tersedia.", "Rewarded ad is not ready yet."), Toast.LENGTH_SHORT).show()
+            rewardedPendingShow = true
+            Toast.makeText(this, t("Iklan sedang disediakan. Tunggu sebentar.", "Preparing the rewarded ad. Please wait."), Toast.LENGTH_SHORT).show()
             loadRewardedAd()
             return
         }
         rewardedAd = null
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
+                fullScreenAdShowing = false
                 loadRewardedAd()
             }
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                fullScreenAdShowing = false
                 loadRewardedAd()
             }
         }
         runCatching {
+            fullScreenAdShowing = true
             ad.show(this) { _: RewardItem ->
                 freeScanCredits += 1
                 prefs.edit().putInt("free_scan_credits", freeScanCredits).apply()
+                android.util.Log.i("QRScannerAds", "Reward earned; freeScanCredits=$freeScanCredits")
                 Toast.makeText(
                     this,
                     t("Ganjaran diterima: +1 free scan. Baki: $freeScanCredits", "Reward received: +1 free scan. Balance: $freeScanCredits"),
@@ -777,6 +973,7 @@ class MainActivity : AppCompatActivity() {
                 ).show()
             }
         }.onFailure {
+            fullScreenAdShowing = false
             loadRewardedAd()
         }
     }
@@ -807,8 +1004,8 @@ class MainActivity : AppCompatActivity() {
             .setTitle(t("Menu QR Scanner", "QR Scanner Menu"))
             .setItems(choices) { _, which ->
                 when (which) {
-                    0 -> beginScanning()
-                    1 -> pickImage.launch("image/*")
+                    0 -> maybeShowInterstitial { beginScanning() }
+                    1 -> launchGallery()
                     2 -> showHistory()
                     3 -> showSettings()
                     4 -> showRewardedAd()
@@ -821,12 +1018,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMoreMenu() {
-        val choices = arrayOf(t("Galeri", "Gallery"), t("Flash", "Flash"), t("Kamera depan / belakang", "Front / rear camera"), t("Tonton iklan & dapatkan +1 free scan", "Watch ad & get +1 free scan"), t("Scan Lagi", "Scan Again"))
+        val choices = arrayOf(t("Galeri", "Gallery"), t("Flash", "Flash"), t("Kamera depan / belakang", "Front / rear camera"), t("Tonton iklan & dapatkan +1 free scan", "Watch ad & get +1 free scan"), t("Scan Lagi", "Scan Again"), t("Pilihan privasi iklan", "Ad privacy choices"), t("Privasi & Polisi", "Privacy & Policy"))
         AlertDialog.Builder(this)
             .setTitle(t("Lainnya", "More"))
             .setItems(choices) { _, which ->
                 when (which) {
-                    0 -> pickImage.launch("image/*")
+                    0 -> launchGallery()
                     1 -> toggleFlash()
                     2 -> {
                         val cameraChoices = arrayOf(t("Kamera belakang", "Rear camera"), t("Kamera depan", "Front camera"))
@@ -844,7 +1041,9 @@ class MainActivity : AppCompatActivity() {
                             .show()
                     }
                     3 -> showRewardedAd()
-                    4 -> startCamera()
+                    4 -> maybeShowInterstitial { beginScanning() }
+                    5 -> showAdPrivacyOptions()
+                    6 -> showPrivacyPolicy()
                 }
             }
             .setNegativeButton(t("Tutup", "Close"), null)
@@ -857,7 +1056,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val text = history.joinToString("\n\n") { it.value + "\n" + it.meta }
-        AlertDialog.Builder(this).setTitle(t("Sejarah Scan", "Scan History")).setMessage(text).setPositiveButton("Tutup", null)
+        AlertDialog.Builder(this).setTitle(t("Sejarah Scan", "Scan History")).setMessage(text).setPositiveButton(t("Tutup", "Close"), null)
             .setNeutralButton(t("Padam Semua", "Clear All")) { _, _ -> history.clear(); saveHistoryToPrefs() }.show()
     }
 
@@ -930,7 +1129,7 @@ class MainActivity : AppCompatActivity() {
                     .setPositiveButton(t("Padam", "Clear")) { _, _ ->
                         history.clear()
                         saveHistoryToPrefs()
-                        Toast.makeText(this@MainActivity, "Sejarah scan telah dipadam.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, t("Sejarah scan telah dipadam.", "Scan history cleared."), Toast.LENGTH_SHORT).show()
                     }.show()
             }
         }
@@ -1003,7 +1202,7 @@ class MainActivity : AppCompatActivity() {
         val time = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date())
         history.removeAll { it.value == value }
         history.add(0, HistoryItem(value, "$time • $format"))
-        while (history.size > 50) history.removeLast()
+        while (history.size > 50) history.removeAt(history.lastIndex)
         saveHistoryToPrefs()
     }
     private fun saveHistoryToPrefs() {
@@ -1028,12 +1227,22 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (::preview.isInitialized) {
+            runCatching { findViewById<AdView>(R.id.welcomeBannerAd).resume() }
+            runCatching { findViewById<AdView>(R.id.bannerAd).resume() }
+            runCatching { findViewById<AdView>(R.id.resultBannerAd).resume() }
+        }
         val returningFromBackground = !firstLaunch && backgroundAt > 0L
         if (returningFromBackground) {
             appOpenReturnCount++
             showAppOpenIfReady()
         }
         firstLaunch = false
+        if (rewardedPendingShow && rewardedAd != null &&
+            lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            rewardedPendingShow = false
+            window.decorView.post { if (!isFinishing && !isDestroyed) showRewardedAd() }
+        }
         if (::preview.isInitialized &&
             findViewById<View>(R.id.resultScreen).visibility != View.VISIBLE &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
@@ -1042,6 +1251,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
     override fun onPause() {
+        if (::preview.isInitialized) {
+            runCatching { findViewById<AdView>(R.id.welcomeBannerAd).pause() }
+            runCatching { findViewById<AdView>(R.id.bannerAd).pause() }
+            runCatching { findViewById<AdView>(R.id.resultBannerAd).pause() }
+        }
         super.onPause()
         backgroundAt = System.currentTimeMillis()
         runCatching { provider?.unbindAll() }
@@ -1052,7 +1266,14 @@ class MainActivity : AppCompatActivity() {
     }
     override fun onDestroy() {
         runCatching { provider?.unbindAll() }
+        if (::preview.isInitialized) {
+            runCatching { findViewById<AdView>(R.id.welcomeBannerAd).destroy() }
+            runCatching { findViewById<AdView>(R.id.bannerAd).destroy() }
+            runCatching { findViewById<AdView>(R.id.resultBannerAd).destroy() }
+        }
         if (scannerDelegate.isInitialized()) runCatching { scanner.close() }
+        runCatching { nativeAd?.destroy() }
+        nativeAd = null
         executor.shutdown()
         super.onDestroy()
     }
