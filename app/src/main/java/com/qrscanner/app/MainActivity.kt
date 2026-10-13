@@ -591,7 +591,7 @@ class MainActivity : AppCompatActivity() {
         runCatching { ad.show(this) }.onFailure { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
     }
 
-    @OptIn(ExperimentalGetImage::class)
+    @ExperimentalGetImage
     private fun getMediaImage(proxy: ImageProxy): android.media.Image? = proxy.image
 
     private fun startCamera() {
