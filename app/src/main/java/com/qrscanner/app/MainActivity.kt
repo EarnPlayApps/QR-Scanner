@@ -14,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
@@ -533,6 +534,7 @@ class MainActivity : AppCompatActivity() {
         runCatching { ad.show(this) }.onFailure { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
     }
 
+    @OptIn(ExperimentalGetImage::class)
     private fun startCamera() {
         if (isFinishing || isDestroyed) return
         if (!::preview.isInitialized) return
