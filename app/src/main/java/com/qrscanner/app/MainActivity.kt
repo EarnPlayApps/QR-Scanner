@@ -303,7 +303,7 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             // Responsive anchored adaptive banner: width follows the actual phone screen.
             val metrics = resources.displayMetrics
-            val widthDp = ((metrics.widthPixels / metrics.density).toInt() - 20).coerceAtLeast(320)
+            val widthDp = ((metrics.widthPixels / metrics.density).toInt() - 20).coerceAtLeast(1)
             adView.adSize = AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, widthDp)
             adView.loadAd(AdRequest.Builder().build())
         }.onFailure {
@@ -771,6 +771,10 @@ class MainActivity : AppCompatActivity() {
                         rewardedLoading = false
                         rewardedAd = null
                         android.util.Log.w("QRScannerAds", "Rewarded failed: ${error.code} ${error.message}")
+                        if (pendingRewardedShow) {
+                            pendingRewardedShow = false
+                            Toast.makeText(this@MainActivity, t("Iklan belum tersedia. Cuba lagi sebentar nanti.", "Ad isn't available yet. Please try again shortly."), Toast.LENGTH_LONG).show()
+                        }
                         retryAdsLater { loadRewardedAd() }
                     }
                 }
