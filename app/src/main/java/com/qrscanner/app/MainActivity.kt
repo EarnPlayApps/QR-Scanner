@@ -813,6 +813,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdShowedFullScreenContent() {
+                // Only reset the scan cycle after an impression is actually shown.
+                scansSinceInterstitial = 0
+                prefs.edit()
+                    .putInt("scans_since_interstitial", scansSinceInterstitial)
+                    .putLong("last_interstitial_at", System.currentTimeMillis())
+                    .apply()
+                android.util.Log.i("QRScannerAds", "Interstitial displayed")
+            }
             override fun onAdDismissedFullScreenContent() {
                 fullScreenAdShowing = false
                 loadInterstitial()
@@ -828,11 +837,6 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             fullScreenAdShowing = true
             ad.show(this)
-            scansSinceInterstitial = 0
-            prefs.edit()
-                .putInt("scans_since_interstitial", scansSinceInterstitial)
-                .putLong("last_interstitial_at", System.currentTimeMillis())
-                .apply()
         }.onFailure {
             android.util.Log.e("QRScannerAds", "Could not show interstitial", it)
             fullScreenAdShowing = false
