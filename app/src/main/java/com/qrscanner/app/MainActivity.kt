@@ -725,22 +725,30 @@ class MainActivity : AppCompatActivity() {
             resumeCameraAfterGalleryFailure()
             return
         }
-        scanner.process(input)
-            .addOnSuccessListener { codes ->
-                val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() }
-                if (first == null) {
-                    statusText.text = t("Tiada QR/barcode ditemui.", "No QR/barcode found.")
-                    Toast.makeText(this, t("Tiada QR/barcode ditemui dalam gambar.", "No QR/barcode found in image."), Toast.LENGTH_SHORT).show()
-                    resumeCameraAfterGalleryFailure()
-                } else {
-                    runOnUiThread { showScanResult(first.rawValue.orEmpty(), formatName(first.format)) }
-                }
-            }
-            .addOnFailureListener {
-                statusText.text = t("Gagal mengimbas gambar.", "Failed to scan image.")
-                Toast.makeText(this, t("Gambar tidak dapat diimbas.", "Unable to scan image."), Toast.LENGTH_SHORT).show()
+        val task = try {
+            scanner.process(input)
+        } catch (e: Exception) {
+            android.util.Log.e("QRScannerGallery", "Could not start image scan", e)
+            statusText.text = t("Gagal mengimbas gambar.", "Failed to scan image.")
+            Toast.makeText(this, t("Gambar tidak dapat diimbas.", "Unable to scan image."), Toast.LENGTH_SHORT).show()
+            resumeCameraAfterGalleryFailure()
+            return
+        }
+        task.addOnSuccessListener { codes ->
+            val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() }
+            if (first == null) {
+                statusText.text = t("Tiada QR/barcode ditemui.", "No QR/barcode found.")
+                Toast.makeText(this, t("Tiada QR/barcode ditemui dalam gambar.", "No QR/barcode found in image."), Toast.LENGTH_SHORT).show()
                 resumeCameraAfterGalleryFailure()
+            } else {
+                runOnUiThread { showScanResult(first.rawValue.orEmpty(), formatName(first.format)) }
             }
+        }.addOnFailureListener {
+            android.util.Log.e("QRScannerGallery", "Image scan task failed", it)
+            statusText.text = t("Gagal mengimbas gambar.", "Failed to scan image.")
+            Toast.makeText(this, t("Gambar tidak dapat diimbas.", "Unable to scan image."), Toast.LENGTH_SHORT).show()
+            resumeCameraAfterGalleryFailure()
+        }
     }
 
     private fun resumeCameraAfterGalleryFailure() {
