@@ -70,7 +70,8 @@ class MainActivity : AppCompatActivity() {
     }
     private val scanner by scannerDelegate
     private val prefs by lazy { getSharedPreferences("qr_scanner", MODE_PRIVATE) }
-    private var locked = false
+    @Volatile private var locked = false
+    @Volatile private var processingFrame = false
     private var torchOn = false
     private var soundEnabled = true
     private var vibrationEnabled = true
@@ -558,6 +559,7 @@ class MainActivity : AppCompatActivity() {
         if (isFinishing || isDestroyed) return
         if (!::preview.isInitialized) return
         locked = false
+        processingFrame = false
         scanAgainButton.visibility = View.VISIBLE
         cameraMessage.text = t("Letak QR atau barcode dalam bingkai", "Place a QR code or barcode inside the frame")
         statusText.text = t("Kamera aktif — sedang mengimbas", "Camera active — scanning")
@@ -573,31 +575,44 @@ class MainActivity : AppCompatActivity() {
                     .build()
 
                 analysis.setAnalyzer(executor) { proxy ->
-                    if (locked || isFinishing || isDestroyed) { runCatching { proxy.close() }; return@setAnalyzer }
+                    if (locked || processingFrame || isFinishing || isDestroyed) {
+                        runCatching { proxy.close() }
+                        return@setAnalyzer
+                    }
                     val image = proxy.image
-                    if (image == null) { proxy.close(); return@setAnalyzer }
+                    if (image == null) { runCatching { proxy.close() }; return@setAnalyzer }
                     val input = runCatching { InputImage.fromMediaImage(image, proxy.imageInfo.rotationDegrees) }.getOrNull()
-                    if (input == null) { proxy.close(); return@setAnalyzer }
-                    scanner.process(input)
-                        .addOnSuccessListener { codes ->
-                            val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() } ?: return@addOnSuccessListener
-                            if (locked || isFinishing || isDestroyed) return@addOnSuccessListener
-                            locked = true
-                            val value = first.rawValue.orEmpty()
-                            val format = formatName(first.format)
-                            if (isFinishing || isDestroyed) {
-                                locked = false
-                                return@addOnSuccessListener
-                            }
-                            runOnUiThread {
-                                if (!isFinishing && !isDestroyed && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
-                                    showScanResult(value, format)
-                                } else {
+                    if (input == null) { runCatching { proxy.close() }; return@setAnalyzer }
+                    processingFrame = true
+                    try {
+                        scanner.process(input)
+                            .addOnSuccessListener { codes ->
+                                val first = codes.firstOrNull { !it.rawValue.isNullOrBlank() } ?: return@addOnSuccessListener
+                                if (locked || isFinishing || isDestroyed) return@addOnSuccessListener
+                                locked = true
+                                val value = first.rawValue.orEmpty()
+                                val format = formatName(first.format)
+                                if (isFinishing || isDestroyed) {
                                     locked = false
+                                    return@addOnSuccessListener
+                                }
+                                runOnUiThread {
+                                    if (!isFinishing && !isDestroyed && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                                        showScanResult(value, format)
+                                    } else {
+                                        locked = false
+                                    }
                                 }
                             }
-                        }
-                        .addOnCompleteListener { runCatching { proxy.close() } }
+                            .addOnCompleteListener {
+                                processingFrame = false
+                                runCatching { proxy.close() }
+                            }
+                    } catch (e: Exception) {
+                        processingFrame = false
+                        runCatching { proxy.close() }
+                        android.util.Log.e("QRScannerCamera", "Could not process camera frame", e)
+                    }
                 }
 
                 p.unbindAll()
