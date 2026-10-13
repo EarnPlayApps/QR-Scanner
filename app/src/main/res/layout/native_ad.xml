@@ -6,7 +6,7 @@
                 <TextView android:id="@+id/nativeAdHeadline" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                 <TextView android:id="@+id/nativeAdAdvertiser" android:textSize="11sp" android:textColor="@color/muted" android:layout_marginTop="2dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
             </LinearLayout>
-            <TextView android:id="@+id/nativeAdLabel" android:text="Sponsored" android:textSize="10sp" android:textColor="@color/muted" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <TextView android:id="@+id/nativeAdLabel" android:text="Iklan / Ad" android:drawableStart="@drawable/ic_ad" android:drawableTint="@color/orange" android:drawablePadding="3dp" android:background="@drawable/bg_ad_badge" android:paddingStart="6dp" android:paddingEnd="6dp" android:paddingTop="4dp" android:paddingBottom="4dp" android:textSize="10sp" android:textStyle="bold" android:textColor="@color/orange_dark" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
         </LinearLayout>
         <com.google.android.gms.ads.nativead.MediaView android:id="@+id/nativeAdMedia" android:layout_width="match_parent" android:layout_height="160dp" android:layout_marginTop="8dp"/>
         <TextView android:id="@+id/nativeAdBody" android:textSize="13sp" android:textColor="@color/muted" android:layout_marginTop="5dp" android:maxLines="2" android:layout_width="match_parent" android:layout_height="wrap_content"/>
