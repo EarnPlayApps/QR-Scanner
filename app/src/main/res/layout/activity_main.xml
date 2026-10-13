@@ -379,9 +379,17 @@
         <TextView
             android:id="@+id/statusText"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:visibility="gone"
-            android:text="Sedia untuk scan"/>
+            android:layout_height="wrap_content"
+            android:minHeight="24dp"
+            android:gravity="center"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:text="Sedia untuk scan"
+            android:textColor="@color/muted"
+            android:textSize="12sp"
+            android:visibility="visible"/>
 
         <Button
             android:id="@+id/permissionButton"
