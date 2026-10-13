@@ -142,7 +142,7 @@ class MainActivity : AppCompatActivity() {
             if (!isFinishing && !isDestroyed) runCatching { setupAds() }
         }
 
-        findViewById<Button>(R.id.startScanButton).setOnClickListener { beginScanning() }
+        findViewById<Button>(R.id.startScanButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
         findViewById<Button>(R.id.settingsButton).apply {
             isClickable = true
             isFocusable = true
@@ -163,7 +163,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
         findViewById<Button>(R.id.resultBackButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
         findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
-        findViewById<Button>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
+        findViewById<Button>(R.id.bottomScanButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
         findViewById<Button>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
         findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
         findViewById<Button>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
@@ -897,7 +897,7 @@ class MainActivity : AppCompatActivity() {
             .setTitle(t("Menu QR Scanner", "QR Scanner Menu"))
             .setItems(choices) { _, which ->
                 when (which) {
-                    0 -> beginScanning()
+                    0 -> maybeShowInterstitial { beginScanning() }
                     1 -> pickImage.launch("image/*")
                     2 -> showHistory()
                     3 -> showSettings()
