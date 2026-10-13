@@ -289,6 +289,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun adUnitId(format: String): String {
         // Debug APKs use Google demo units so every format can be verified safely.
+        // CI validation note: use ApplicationInfo.FLAG_DEBUGGABLE instead of BuildConfig.
         // Release APKs use the publisher's production units.
         val test = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
         return when (format) {
