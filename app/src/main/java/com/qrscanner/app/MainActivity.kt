@@ -129,6 +129,7 @@ class MainActivity : AppCompatActivity() {
         scanCount = prefs.getInt("scan_count", 0)
         freeScanCredits = prefs.getInt("free_scan_credits", 0)
         scansSinceInterstitial = prefs.getInt("scans_since_interstitial", 0)
+        lastAppOpenShownAt = prefs.getLong("last_app_open_shown_at", 0L)
         languageMs = prefs.getBoolean("language_ms", true)
         applyLanguage()
         // Let the first screen render before initializing consent/ads SDKs.
@@ -349,6 +350,13 @@ class MainActivity : AppCompatActivity() {
                         .setMediaAspectRatio(NativeAdOptions.NATIVE_MEDIA_ASPECT_RATIO_LANDSCAPE)
                         .build()
                 )
+                .withAdListener(object : AdListener() {
+                    override fun onAdFailedToLoad(error: LoadAdError) {
+                        nativeAdLoaded = false
+                        findViewById<View>(R.id.nativeAdContainer).visibility = View.GONE
+                        android.util.Log.w("QRScannerAds", "Native ad failed: ${error.code} ${error.message}")
+                    }
+                })
                 .build()
             loader.loadAd(AdRequest.Builder().build())
         }
@@ -379,12 +387,25 @@ class MainActivity : AppCompatActivity() {
     private fun showAppOpenIfReady() {
         val now = System.currentTimeMillis()
         if (firstLaunch || appOpenShowing || isFinishing || isDestroyed) return
-        if (appOpenReturnCount < 3) return
-        if (now - lastAppOpenShownAt < 900000L) return
-        if (backgroundAt <= 0L || now - backgroundAt < 60000L) return
+        if (appOpenReturnCount < 1) return
+
+        // Keep app-open ads occasional: no more than three per local day and
+        // never sooner than 30 seconds after the previous display.
+        val dayKey = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(now))
+        if (prefs.getString("app_open_day", "") != dayKey) {
+            prefs.edit().putString("app_open_day", dayKey).putInt("app_open_shown_today", 0).apply()
+        }
+        if (prefs.getInt("app_open_shown_today", 0) >= 3) return
+        if (now - lastAppOpenShownAt < 30000L) return
+        if (backgroundAt <= 0L || now - backgroundAt < 30000L) return
+
         val ad = appOpenAd ?: return
         appOpenShowing = true
         lastAppOpenShownAt = now
+        prefs.edit()
+            .putLong("last_app_open_shown_at", now)
+            .putInt("app_open_shown_today", prefs.getInt("app_open_shown_today", 0) + 1)
+            .apply()
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
             override fun onAdFailedToShowFullScreenContent(e: AdError) { appOpenAd = null; appOpenShowing = false; loadAppOpenAd() }
@@ -462,7 +483,7 @@ class MainActivity : AppCompatActivity() {
                 .putInt("scans_since_interstitial", scansSinceInterstitial)
                 .apply()
             feedback()
-            statusText.text = "Scan berjaya: $format"
+            statusText.text = t("Scan berjaya: $format", "Scan successful: $format")
             cameraMessage.text = t("QR/barcode ditemui", "QR/barcode found")
             showResult(value, format)
         }.onFailure {
@@ -794,7 +815,7 @@ class MainActivity : AppCompatActivity() {
             minHeight = 0
             setPadding(18, 0, 18, 0)
             setOnClickListener {
-                val choices = arrayOf("Kamera belakang", "Kamera depan")
+                val choices = arrayOf(t("Kamera belakang", "Rear camera"), t("Kamera depan", "Front camera"))
                 AlertDialog.Builder(this@MainActivity)
                     .setTitle(t("Pilih Kamera", "Choose Camera"))
                     .setSingleChoiceItems(choices, if (useFrontCamera) 1 else 0) { dialog, which ->
