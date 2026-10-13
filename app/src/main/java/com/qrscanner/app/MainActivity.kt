@@ -904,7 +904,7 @@ class MainActivity : AppCompatActivity() {
     private fun showSettings() {
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(28, 8, 28, 4)
+            setPadding(18, 8, 18, 4)
         }
 
         fun addSwitch(title: String, checked: Boolean, onChange: (Boolean) -> Unit) {
@@ -912,7 +912,12 @@ class MainActivity : AppCompatActivity() {
                 text = title
                 isChecked = checked
                 setOnCheckedChangeListener { _, value -> onChange(value); saveSettings() }
-                setPadding(0, 10, 0, 10)
+                background = ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_glass)
+                setPadding(14, 12, 14, 12)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(0, 4, 0, 4) }
             })
         }
 
@@ -927,8 +932,13 @@ class MainActivity : AppCompatActivity() {
             background = ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_glass)
             setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ink))
             isAllCaps = false
-            minHeight = 0
-            setPadding(18, 0, 18, 0)
+            minHeight = 48
+            isAllCaps = false
+            setPadding(18, 8, 18, 8)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                48
+            ).apply { setMargins(0, 4, 0, 4) }
             setOnClickListener {
                 val choices = arrayOf(t("Kamera belakang", "Rear camera"), t("Kamera depan", "Front camera"))
                 AlertDialog.Builder(this@MainActivity)
