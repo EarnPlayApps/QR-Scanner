@@ -433,16 +433,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadInterstitial() {
+        if (isFinishing || isDestroyed || !adsInitializationStarted || interstitialAd != null) return
         runCatching {
             InterstitialAd.load(this, AdMobIds.INTERSTITIAL, AdRequest.Builder().build(),
                 object : InterstitialAdLoadCallback() {
-                    override fun onAdLoaded(ad: InterstitialAd) { interstitialAd = ad }
+                    override fun onAdLoaded(ad: InterstitialAd) {
+                        interstitialAd = ad
+                        android.util.Log.i("QRScannerAds", "Interstitial loaded successfully")
+                    }
                     override fun onAdFailedToLoad(e: LoadAdError) {
                         interstitialAd = null
-                        android.util.Log.w("QRScannerAds", "Interstitial failed: ${e.code} ${e.message}")
+                        android.util.Log.e("QRScannerAds", "Interstitial failed: code=${e.code}, domain=${e.domain}, message=${e.message}, response=${e.responseInfo}")
                         retryAdsLater { loadInterstitial() }
                     }
                 })
+        }.onFailure {
+            android.util.Log.e("QRScannerAds", "Interstitial request threw an exception", it)
+            retryAdsLater { loadInterstitial() }
         }
     }
 
@@ -716,7 +723,12 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val ad = interstitialAd ?: return
+        val ad = interstitialAd
+        if (ad == null) {
+            android.util.Log.i("QRScannerAds", "Five-scan threshold reached but interstitial is not ready; requesting another load")
+            loadInterstitial()
+            return
+        }
         interstitialAd = null
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() { loadInterstitial() }
