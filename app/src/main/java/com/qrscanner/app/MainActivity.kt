@@ -1095,7 +1095,7 @@ class MainActivity : AppCompatActivity() {
         val time = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date())
         history.removeAll { it.value == value }
         history.add(0, HistoryItem(value, "$time • $format"))
-        while (history.size > 50) history.removeLast()
+        while (history.size > 50) history.removeAt(history.lastIndex)
         saveHistoryToPrefs()
     }
     private fun saveHistoryToPrefs() {
