@@ -130,6 +130,17 @@
 
     </LinearLayout>
 
+    <!-- Welcome banner: shown only on launch screen. -->
+    <com.google.android.gms.ads.AdView
+        android:id="@+id/welcomeBannerAd"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_gravity="bottom"
+        android:visibility="gone"
+        android:background="@color/surface"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-9940728659432865/2764564944"/>
+
     <!-- SCANNER -->
     <LinearLayout
         android:id="@+id/mainContent"
