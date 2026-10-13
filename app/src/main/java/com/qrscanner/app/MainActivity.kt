@@ -302,8 +302,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun configureBannerAds() {
+        val welcomeBanner = findViewById<AdView>(R.id.welcomeBannerAd)
         val scannerBanner = findViewById<AdView>(R.id.bannerAd)
         val resultBanner = findViewById<AdView>(R.id.resultBannerAd)
+        welcomeBanner.adListener = object : AdListener() {
+            override fun onAdLoaded() {
+                android.util.Log.i("QRScannerAds", "Welcome banner loaded successfully")
+                welcomeBanner.visibility = if (findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE) View.VISIBLE else View.GONE
+            }
+            override fun onAdFailedToLoad(error: LoadAdError) {
+                welcomeBanner.visibility = View.GONE
+                android.util.Log.w("QRScannerAds", "Welcome banner failed: code=" + error.code + ", domain=" + error.domain + ", message=" + error.message)
+                retryAdsLater { requestBanner(welcomeBanner, "welcome") }
+            }
+        }
         scannerBanner.adListener = object : AdListener() {
             override fun onAdLoaded() {
                 scannerBannerLoaded = true
