@@ -81,6 +81,8 @@ class MainActivity : AppCompatActivity() {
     private var scanCount = 0
     private var languageMs = true
     private var interstitialAd: InterstitialAd? = null
+    private var interstitialLoading = false
+    private var fullScreenAdShowing = false
     private var appOpenAd: AppOpenAd? = null
     private var appOpenLoading = false
     private var appOpenShowing = false
@@ -140,7 +142,11 @@ class MainActivity : AppCompatActivity() {
         // Let the first screen render before initializing consent/ads SDKs.
         // An SDK initialization problem must never close the scanner on launch.
         window.decorView.post {
-            if (!isFinishing && !isDestroyed) runCatching { setupAds() }
+            if (!isFinishing && !isDestroyed) {
+                runCatching { setupAds() }.onFailure {
+                    android.util.Log.e("QRScannerAds", "Ad consent/initialization setup failed", it)
+                }
+            }
         }
 
         findViewById<Button>(R.id.startScanButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
@@ -161,14 +167,14 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, t("Keputusan telah disimpan ke sejarah.", "Result saved to history."), Toast.LENGTH_SHORT).show()
             }
         }
-        findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
+        findViewById<Button>(R.id.galleryButton).setOnClickListener { launchGallery() }
         findViewById<Button>(R.id.resultBackButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
         findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
         findViewById<Button>(R.id.bottomScanButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
         findViewById<Button>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
         findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
         findViewById<Button>(R.id.bottomMoreButton).setOnClickListener { showMoreMenu() }
-        scanAgainButton.setOnClickListener { startCamera() }
+        scanAgainButton.setOnClickListener { maybeShowInterstitial { beginScanning() } }
         configureBannerAds()
         permissionButton.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -475,16 +481,27 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadInterstitial() {
+        if (interstitialLoading || interstitialAd != null || isFinishing || isDestroyed) return
+        interstitialLoading = true
         runCatching {
             InterstitialAd.load(this, adUnitId("interstitial"), AdRequest.Builder().build(),
                 object : InterstitialAdLoadCallback() {
-                    override fun onAdLoaded(ad: InterstitialAd) { interstitialAd = ad }
+                    override fun onAdLoaded(ad: InterstitialAd) {
+                        interstitialLoading = false
+                        if (isFinishing || isDestroyed) return
+                        interstitialAd = ad
+                        android.util.Log.i("QRScannerAds", "Interstitial loaded successfully")
+                    }
                     override fun onAdFailedToLoad(e: LoadAdError) {
+                        interstitialLoading = false
                         interstitialAd = null
                         android.util.Log.w("QRScannerAds", "Interstitial failed: ${e.code} ${e.message}")
                         retryAdsLater { loadInterstitial() }
                     }
                 })
+        }.onFailure {
+            interstitialLoading = false
+            android.util.Log.e("QRScannerAds", "Interstitial request threw an exception", it)
         }
     }
 
@@ -507,7 +524,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAppOpenIfReady() {
         val now = System.currentTimeMillis()
-        if (firstLaunch || appOpenShowing || isFinishing || isDestroyed) return
+        if (firstLaunch || appOpenShowing || fullScreenAdShowing || isFinishing || isDestroyed) return
+        // App-open ads belong on the launch/loading screen, not over an active scan result.
+        if (findViewById<View>(R.id.welcomeScreen).visibility != View.VISIBLE) return
         if (appOpenReturnCount < 1) return
 
         // Keep app-open ads occasional: no more than three per local day and
@@ -539,7 +558,7 @@ class MainActivity : AppCompatActivity() {
         if (isFinishing || isDestroyed) return
         if (!::preview.isInitialized) return
         locked = false
-        scanAgainButton.visibility = View.GONE
+        scanAgainButton.visibility = View.VISIBLE
         cameraMessage.text = t("Letak QR atau barcode dalam bingkai", "Place a QR code or barcode inside the frame")
         statusText.text = t("Kamera aktif — sedang mengimbas", "Camera active — scanning")
         val future = ProcessCameraProvider.getInstance(this)
@@ -749,6 +768,10 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    private fun launchGallery() {
+        maybeShowInterstitial { pickImage.launch("image/*") }
+    }
+
     private fun maybeShowInterstitial(onContinue: () -> Unit) {
         if (scansSinceInterstitial < 5 ||
             !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
@@ -791,16 +814,19 @@ class MainActivity : AppCompatActivity() {
 
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
+                fullScreenAdShowing = false
                 loadInterstitial()
                 continueOnce()
             }
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                fullScreenAdShowing = false
                 android.util.Log.w("QRScannerAds", "Interstitial failed to show: ${error.message}")
                 loadInterstitial()
                 continueOnce()
             }
         }
         runCatching {
+            fullScreenAdShowing = true
             ad.show(this)
             scansSinceInterstitial = 0
             prefs.edit()
@@ -809,6 +835,7 @@ class MainActivity : AppCompatActivity() {
                 .apply()
         }.onFailure {
             android.util.Log.e("QRScannerAds", "Could not show interstitial", it)
+            fullScreenAdShowing = false
             interstitialAd = null
             loadInterstitial()
             continueOnce()
@@ -852,13 +879,16 @@ class MainActivity : AppCompatActivity() {
         rewardedAd = null
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
+                fullScreenAdShowing = false
                 loadRewardedAd()
             }
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                fullScreenAdShowing = false
                 loadRewardedAd()
             }
         }
         runCatching {
+            fullScreenAdShowing = true
             ad.show(this) { _: RewardItem ->
                 freeScanCredits += 1
                 prefs.edit().putInt("free_scan_credits", freeScanCredits).apply()
@@ -869,6 +899,7 @@ class MainActivity : AppCompatActivity() {
                 ).show()
             }
         }.onFailure {
+            fullScreenAdShowing = false
             loadRewardedAd()
         }
     }
@@ -900,7 +931,7 @@ class MainActivity : AppCompatActivity() {
             .setItems(choices) { _, which ->
                 when (which) {
                     0 -> maybeShowInterstitial { beginScanning() }
-                    1 -> pickImage.launch("image/*")
+                    1 -> launchGallery()
                     2 -> showHistory()
                     3 -> showSettings()
                     4 -> showRewardedAd()
@@ -918,7 +949,7 @@ class MainActivity : AppCompatActivity() {
             .setTitle(t("Lainnya", "More"))
             .setItems(choices) { _, which ->
                 when (which) {
-                    0 -> pickImage.launch("image/*")
+                    0 -> launchGallery()
                     1 -> toggleFlash()
                     2 -> {
                         val cameraChoices = arrayOf(t("Kamera belakang", "Rear camera"), t("Kamera depan", "Front camera"))
