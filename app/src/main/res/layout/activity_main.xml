@@ -141,6 +141,23 @@
         ads:adSize="BANNER"
         ads:adUnitId="ca-app-pub-9940728659432865/2764564944"/>
 
+    <TextView
+        android:id="@+id/welcomeAdLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="18dp"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="10dp"
+        android:layout_marginBottom="50dp"
+        android:background="@drawable/bg_ad_badge"
+        android:paddingStart="7dp"
+        android:paddingEnd="7dp"
+        android:gravity="center"
+        android:text="IKLAN • AD"
+        android:textColor="@color/orange_dark"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
     <!-- SCANNER -->
     <LinearLayout
         android:id="@+id/mainContent"
@@ -393,6 +410,23 @@
             android:background="@drawable/bg_primary"
             android:minWidth="0dp"
             android:minHeight="0dp"/>
+
+        <TextView
+            android:id="@+id/scannerAdLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="18dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp"
+            android:background="@drawable/bg_ad_badge"
+            android:paddingStart="7dp"
+            android:paddingEnd="7dp"
+            android:gravity="center"
+            android:text="IKLAN • AD"
+            android:textColor="@color/orange_dark"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
 
         <com.google.android.gms.ads.AdView
             android:id="@+id/bannerAd"
@@ -651,6 +685,21 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"/>
             </FrameLayout>
+
+            <TextView
+                android:id="@+id/resultAdLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="18dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_ad_badge"
+                android:paddingStart="7dp"
+                android:paddingEnd="7dp"
+                android:gravity="center"
+                android:text="IKLAN • AD"
+                android:textColor="@color/orange_dark"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
 
             <com.google.android.gms.ads.AdView
                 android:id="@+id/resultBannerAd"
