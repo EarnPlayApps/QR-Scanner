@@ -18,6 +18,8 @@ import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
@@ -127,6 +129,15 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         setContentView(R.layout.activity_main)
+        val rootContainer = findViewById<View>(R.id.rootContainer)
+        ViewCompat.setOnApplyWindowInsetsListener(rootContainer) { view, insets ->
+            val systemBars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+        ViewCompat.requestApplyInsets(rootContainer)
         preview = findViewById(R.id.preview)
         permissionButton = findViewById(R.id.permissionButton)
         cameraMessage = findViewById(R.id.cameraMessage)
@@ -221,6 +232,9 @@ class MainActivity : AppCompatActivity() {
             isAllCaps = false
         }
         findViewById<TextView>(R.id.welcomeTagline).text = if (languageMs) "Imbas Dunia Dengan Lebih Bijak" else "Scan a Smarter World"
+        findViewById<TextView>(R.id.flashLabel).text = if (languageMs) "Flash" else "Flashlight"
+        findViewById<TextView>(R.id.galleryLabel).text = if (languageMs) "Galeri" else "Gallery"
+        permissionButton.text = if (languageMs) "Benarkan Kamera" else "Allow Camera"
     }
 
     private fun beginScanning() {
@@ -285,22 +299,28 @@ class MainActivity : AppCompatActivity() {
         if (adsInitializationStarted || isFinishing || isDestroyed) return
         adsInitializationStarted = true
         android.util.Log.i("QRScannerAds", "Initializing Google Mobile Ads SDK")
-        MobileAds.initialize(this) { status ->
-            runOnUiThread {
-                if (isFinishing || isDestroyed) return@runOnUiThread
-                android.util.Log.i("QRScannerAds", "Mobile Ads initialized: $status")
-                when {
-                    findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE -> requestBanner(findViewById(R.id.welcomeBannerAd), "welcome")
-                    findViewById<View>(R.id.mainContent).visibility == View.VISIBLE -> requestBanner(findViewById(R.id.bannerAd), "scanner")
-                    findViewById<View>(R.id.resultScreen).visibility == View.VISIBLE -> {
-                        requestBanner(findViewById(R.id.resultBannerAd), "result")
-                        loadNativeAd()
+        runCatching {
+            MobileAds.initialize(this) { status ->
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    android.util.Log.i("QRScannerAds", "Mobile Ads initialized: $status")
+                    when {
+                        findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE -> requestBanner(findViewById(R.id.welcomeBannerAd), "welcome")
+                        findViewById<View>(R.id.mainContent).visibility == View.VISIBLE -> requestBanner(findViewById(R.id.bannerAd), "scanner")
+                        findViewById<View>(R.id.resultScreen).visibility == View.VISIBLE -> {
+                            requestBanner(findViewById(R.id.resultBannerAd), "result")
+                            loadNativeAd()
+                        }
                     }
+                    loadInterstitial()
+                    loadAppOpenAd()
+                    loadRewardedAd()
                 }
-                loadInterstitial()
-                loadAppOpenAd()
-                loadRewardedAd()
             }
+        }.onFailure {
+            adsInitializationStarted = false
+            android.util.Log.e("QRScannerAds", "Mobile Ads SDK initialization failed", it)
+            retryAdsLater { initializeAdsIfAllowed(true) }
         }
     }
 
@@ -503,6 +523,7 @@ class MainActivity : AppCompatActivity() {
         }.onFailure {
             interstitialLoading = false
             android.util.Log.e("QRScannerAds", "Interstitial request threw an exception", it)
+            retryAdsLater { loadInterstitial() }
         }
     }
 
@@ -520,7 +541,11 @@ class MainActivity : AppCompatActivity() {
                         retryAdsLater { loadAppOpenAd() }
                     }
                 })
-        }.onFailure { appOpenLoading = false }
+        }.onFailure {
+            appOpenLoading = false
+            android.util.Log.e("QRScannerAds", "App-open request threw an exception", it)
+            retryAdsLater { loadAppOpenAd() }
+        }
     }
 
     private fun showAppOpenIfReady() {
@@ -644,8 +669,8 @@ class MainActivity : AppCompatActivity() {
             showResult(value, format)
         }.onFailure {
             locked = false
-            statusText.text = "Keputusan scan tidak dapat dipaparkan."
-            Toast.makeText(this, "Keputusan scan tidak dapat dipaparkan.", Toast.LENGTH_SHORT).show()
+            statusText.text = t("Keputusan scan tidak dapat dipaparkan.", "Could not display the scan result.")
+            Toast.makeText(this, t("Keputusan scan tidak dapat dipaparkan.", "Could not display the scan result."), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -681,7 +706,7 @@ class MainActivity : AppCompatActivity() {
     private fun scanImage(uri: Uri) {
         if (isFinishing || isDestroyed) return
         runCatching { provider?.unbindAll(); provider = null; camera = null }.onFailure { }
-        statusText.text = "Mengimbas gambar..."
+        statusText.text = t("Mengimbas gambar...", "Scanning image...")
         val input = runCatching { InputImage.fromFilePath(this, uri) }.getOrNull()
         if (input == null) {
             statusText.text = t("Gambar tidak dapat dibuka.", "Unable to open image.")
@@ -885,6 +910,8 @@ class MainActivity : AppCompatActivity() {
         }.onFailure {
             rewardedLoading = false
             rewardedAd = null
+            android.util.Log.e("QRScannerAds", "Rewarded request threw an exception", it)
+            retryAdsLater { loadRewardedAd() }
         }
     }
 
@@ -1001,7 +1028,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val text = history.joinToString("\n\n") { it.value + "\n" + it.meta }
-        AlertDialog.Builder(this).setTitle(t("Sejarah Scan", "Scan History")).setMessage(text).setPositiveButton("Tutup", null)
+        AlertDialog.Builder(this).setTitle(t("Sejarah Scan", "Scan History")).setMessage(text).setPositiveButton(t("Tutup", "Close"), null)
             .setNeutralButton(t("Padam Semua", "Clear All")) { _, _ -> history.clear(); saveHistoryToPrefs() }.show()
     }
 
@@ -1074,7 +1101,7 @@ class MainActivity : AppCompatActivity() {
                     .setPositiveButton(t("Padam", "Clear")) { _, _ ->
                         history.clear()
                         saveHistoryToPrefs()
-                        Toast.makeText(this@MainActivity, "Sejarah scan telah dipadam.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, t("Sejarah scan telah dipadam.", "Scan history cleared."), Toast.LENGTH_SHORT).show()
                     }.show()
             }
         }
