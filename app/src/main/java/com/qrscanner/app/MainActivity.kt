@@ -592,6 +592,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     @OptIn(ExperimentalGetImage::class)
+    private fun getMediaImage(proxy: ImageProxy): android.media.Image? = proxy.image
+
     private fun startCamera() {
         if (isFinishing || isDestroyed) return
         if (!::preview.isInitialized) return
@@ -615,7 +617,7 @@ class MainActivity : AppCompatActivity() {
                         runCatching { proxy.close() }
                         return@setAnalyzer
                     }
-                    val image = proxy.image
+                    val image = getMediaImage(proxy)
                     if (image == null) { runCatching { proxy.close() }; return@setAnalyzer }
                     val input = runCatching { InputImage.fromMediaImage(image, proxy.imageInfo.rotationDegrees) }.getOrNull()
                     if (input == null) { runCatching { proxy.close() }; return@setAnalyzer }
