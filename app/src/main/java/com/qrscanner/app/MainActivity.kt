@@ -287,9 +287,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun adUnitId(format: String): String {
+        // Debug APKs use Google demo units so every format can be verified safely.
+        // Release APKs use the publisher's production units.
+        val test = BuildConfig.DEBUG
+        return when (format) {
+            "banner" -> if (test) "ca-app-pub-3940256099942544/6300978111" else "ca-app-pub-9940728659432865/2764564944"
+            "native" -> if (test) "ca-app-pub-3940256099942544/2247696110" else "ca-app-pub-9940728659432865/2572993259"
+            "interstitial" -> if (test) "ca-app-pub-3940256099942544/1033173712" else "ca-app-pub-9940728659432865/6512238262"
+            "app_open" -> if (test) "ca-app-pub-3940256099942544/9257395921" else "ca-app-pub-9940728659432865/9951869956"
+            "rewarded" -> if (test) "ca-app-pub-3940256099942544/5224354917" else "ca-app-pub-9940728659432865/7753257039"
+            else -> error("Unknown ad format: $format")
+        }
+    }
+
     private fun requestBanner(adView: AdView, slot: String) {
         if (isFinishing || isDestroyed || !adsInitializationStarted) return
-        android.util.Log.i("QRScannerAds", "Requesting $slot banner")
+        adView.adUnitId = adUnitId("banner")
+        android.util.Log.i("QRScannerAds", "Requesting $slot banner; debugTestAds=${BuildConfig.DEBUG}")
         runCatching {
             adView.loadAd(AdRequest.Builder().build())
         }.onFailure {
@@ -360,7 +375,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadNativeAd() {
         runCatching {
             val adView = findViewById<NativeAdView>(R.id.nativeAdView)
-            val loader = AdLoader.Builder(this, "ca-app-pub-9940728659432865/2572993259")
+            val loader = AdLoader.Builder(this, adUnitId("native"))
                 .forNativeAd { ad: NativeAd ->
                     if (isFinishing || isDestroyed) {
                         ad.destroy()
@@ -425,7 +440,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadInterstitial() {
         runCatching {
-            InterstitialAd.load(this, "ca-app-pub-9940728659432865/6512238262", AdRequest.Builder().build(),
+            InterstitialAd.load(this, adUnitId("interstitial"), AdRequest.Builder().build(),
                 object : InterstitialAdLoadCallback() {
                     override fun onAdLoaded(ad: InterstitialAd) { interstitialAd = ad }
                     override fun onAdFailedToLoad(e: LoadAdError) {
@@ -441,7 +456,7 @@ class MainActivity : AppCompatActivity() {
         if (appOpenLoading || appOpenAd != null) return
         appOpenLoading = true
         runCatching {
-            AppOpenAd.load(this, "ca-app-pub-9940728659432865/9951869956", AdRequest.Builder().build(),
+            AppOpenAd.load(this, adUnitId("app_open"), AdRequest.Builder().build(),
                 object : AppOpenAd.AppOpenAdLoadCallback() {
                     override fun onAdLoaded(ad: AppOpenAd) { appOpenLoading = false; appOpenAd = ad }
                     override fun onAdFailedToLoad(e: LoadAdError) {
@@ -729,7 +744,7 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             RewardedAd.load(
                 this,
-                "ca-app-pub-9940728659432865/7753257039",
+                adUnitId("rewarded"),
                 AdRequest.Builder().build(),
                 object : RewardedAdLoadCallback() {
                     override fun onAdLoaded(ad: RewardedAd) {
