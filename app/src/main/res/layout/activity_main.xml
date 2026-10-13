@@ -141,7 +141,7 @@
         android:visibility="gone"
         android:background="@color/surface"
         ads:adSize="BANNER"
-        ads:adUnitId="ca-app-pub-9940728659432865/2764564944"/>
+        ads:adUnitId="@string/admob_banner_id"/>
 
     <!-- SCANNER -->
     <LinearLayout
@@ -404,7 +404,7 @@
             android:layout_height="50dp"
             android:visibility="gone"
             ads:adSize="BANNER"
-            ads:adUnitId="ca-app-pub-9940728659432865/2764564944"/>
+            ads:adUnitId="@string/admob_banner_id"/>
 
 
 
@@ -665,7 +665,7 @@
                 android:layout_marginTop="12dp"
                 android:visibility="gone"
                 ads:adSize="BANNER"
-                ads:adUnitId="ca-app-pub-9940728659432865/2764564944"/>
+                ads:adUnitId="@string/admob_banner_id"/>
 
             <Button
                 android:id="@+id/resultScanAgainButton"
