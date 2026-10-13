@@ -157,8 +157,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
         findViewById<Button>(R.id.galleryButton).setOnClickListener { pickImage.launch("image/*") }
-        findViewById<Button>(R.id.resultBackButton).setOnClickListener { maybeShowInterstitial(); beginScanning() }
-        findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { maybeShowInterstitial(); beginScanning() }
+        findViewById<Button>(R.id.resultBackButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
+        findViewById<Button>(R.id.resultScanAgainButton).setOnClickListener { maybeShowInterstitial { beginScanning() } }
         findViewById<Button>(R.id.bottomScanButton).setOnClickListener { beginScanning() }
         findViewById<Button>(R.id.bottomHistoryButton).setOnClickListener { showHistory() }
         findViewById<Button>(R.id.bottomSettingsButton).setOnClickListener { showSettings() }
@@ -709,10 +709,18 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun maybeShowInterstitial() {
-        if (scansSinceInterstitial < 5 || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
-        if (System.currentTimeMillis() - prefs.getLong("last_interstitial_at", 0L) < 300000L) return
+    private fun maybeShowInterstitial(onContinue: () -> Unit) {
+        if (scansSinceInterstitial < 5 ||
+            !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            onContinue()
+            return
+        }
+        if (System.currentTimeMillis() - prefs.getLong("last_interstitial_at", 0L) < 300000L) {
+            onContinue()
+            return
+        }
 
+        // A rewarded credit replaces the next interstitial opportunity.
         if (freeScanCredits > 0) {
             freeScanCredits--
             scansSinceInterstitial = 0
@@ -720,22 +728,50 @@ class MainActivity : AppCompatActivity() {
                 .putInt("free_scan_credits", freeScanCredits)
                 .putInt("scans_since_interstitial", scansSinceInterstitial)
                 .apply()
+            onContinue()
             return
         }
 
-        val ad = interstitialAd ?: return
+        val ad = interstitialAd
+        if (ad == null) {
+            // Keep the scan counter so the next user-initiated transition can try again.
+            loadInterstitial()
+            onContinue()
+            return
+        }
+
         interstitialAd = null
+        var continued = false
+        fun continueOnce() {
+            if (!continued) {
+                continued = true
+                onContinue()
+            }
+        }
+
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-            override fun onAdDismissedFullScreenContent() { loadInterstitial() }
-            override fun onAdFailedToShowFullScreenContent(error: AdError) { loadInterstitial() }
+            override fun onAdDismissedFullScreenContent() {
+                loadInterstitial()
+                continueOnce()
+            }
+            override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                android.util.Log.w("QRScannerAds", "Interstitial failed to show: ${error.message}")
+                loadInterstitial()
+                continueOnce()
+            }
         }
         runCatching {
             ad.show(this)
             scansSinceInterstitial = 0
-            prefs.edit().putInt("scans_since_interstitial", scansSinceInterstitial).putLong("last_interstitial_at", System.currentTimeMillis()).apply()
+            prefs.edit()
+                .putInt("scans_since_interstitial", scansSinceInterstitial)
+                .putLong("last_interstitial_at", System.currentTimeMillis())
+                .apply()
         }.onFailure {
+            android.util.Log.e("QRScannerAds", "Could not show interstitial", it)
             interstitialAd = null
             loadInterstitial()
+            continueOnce()
         }
     }
 
@@ -837,7 +873,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMoreMenu() {
-        val choices = arrayOf(t("Galeri", "Gallery"), t("Flash", "Flash"), t("Kamera depan / belakang", "Front / rear camera"), t("Tonton iklan & dapatkan +1 free scan", "Watch ad & get +1 free scan"), t("Scan Lagi", "Scan Again"))
+        val choices = arrayOf(t("Galeri", "Gallery"), t("Flash", "Flash"), t("Kamera depan / belakang", "Front / rear camera"), t("Tonton iklan & dapatkan +1 free scan", "Watch ad & get +1 free scan"), t("Scan Lagi", "Scan Again"), t("Pilihan privasi iklan", "Ad privacy choices"), t("Privasi & Polisi", "Privacy & Policy"))
         AlertDialog.Builder(this)
             .setTitle(t("Lainnya", "More"))
             .setItems(choices) { _, which ->
@@ -860,7 +896,9 @@ class MainActivity : AppCompatActivity() {
                             .show()
                     }
                     3 -> showRewardedAd()
-                    4 -> startCamera()
+                    4 -> maybeShowInterstitial { beginScanning() }
+                    5 -> showAdPrivacyOptions()
+                    6 -> showPrivacyPolicy()
                 }
             }
             .setNegativeButton(t("Tutup", "Close"), null)
