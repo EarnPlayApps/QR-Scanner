@@ -318,6 +318,7 @@ class MainActivity : AppCompatActivity() {
             }
             override fun onAdFailedToLoad(error: LoadAdError) {
                 welcomeBanner.visibility = View.GONE
+                findViewById<View>(R.id.welcomeAdLabel).visibility = View.GONE
                 android.util.Log.w("QRScannerAds", "Welcome banner failed: code=" + error.code + ", domain=" + error.domain + ", message=" + error.message)
                 retryAdsLater { requestBanner(welcomeBanner, "welcome") }
             }
