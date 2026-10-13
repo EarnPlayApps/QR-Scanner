@@ -8,7 +8,7 @@
             </LinearLayout>
             <TextView android:id="@+id/nativeAdLabel" android:text="Sponsored" android:textSize="10sp" android:textColor="@color/muted" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
         </LinearLayout>
-        <com.google.android.gms.ads.nativead.MediaView android:id="@+id/nativeAdMedia" android:layout_width="match_parent" android:layout_height="220dp" android:layout_marginTop="8dp"/>
+        <com.google.android.gms.ads.nativead.MediaView android:id="@+id/nativeAdMedia" android:layout_width="match_parent" android:layout_height="160dp" android:layout_marginTop="8dp"/>
         <TextView android:id="@+id/nativeAdBody" android:textSize="13sp" android:textColor="@color/muted" android:layout_marginTop="5dp" android:maxLines="2" android:layout_width="match_parent" android:layout_height="wrap_content"/>
         <Button android:id="@+id/nativeAdCallToAction" android:text="Learn More" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="9dp"/>
     </LinearLayout>
