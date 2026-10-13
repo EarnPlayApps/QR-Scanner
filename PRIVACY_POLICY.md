@@ -26,7 +26,7 @@ QR Scanner is a general utility app and is not specifically directed to children
 You can control camera permission through Android settings. You can disable optional automatic link opening in QR Scanner settings. Advertising and consent choices may also depend on your device, region, and Google settings.
 
 ## Contact
-For privacy questions or app support, contact the publisher through the support channel associated with the QR Scanner app listing.
+For privacy questions or app support, email **earnplayapps@gmail.com**. You may also open the project's public support page at https://github.com/EarnPlayApps/QR-Scanner/issues.
 
 ## Changes
 This policy may be updated when app functionality, advertising configuration, or legal requirements change.
