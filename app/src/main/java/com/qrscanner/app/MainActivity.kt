@@ -38,6 +38,15 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.Executors
 
+private object AdMobIds {
+    // Production AdMob ad unit IDs only. No Google demo/test ad IDs.
+    const val BANNER = "ca-app-pub-9940728659432865/2764564944"
+    const val INTERSTITIAL = "ca-app-pub-9940728659432865/6512238262"
+    const val REWARDED = "ca-app-pub-9940728659432865/7753257039"
+    const val NATIVE = "ca-app-pub-9940728659432865/2572993259"
+    const val APP_OPEN = "ca-app-pub-9940728659432865/9951869956"
+}
+
 class MainActivity : AppCompatActivity() {
     private lateinit var preview: PreviewView
     private lateinit var permissionButton: Button
@@ -360,7 +369,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadNativeAd() {
         runCatching {
             val adView = findViewById<NativeAdView>(R.id.nativeAdView)
-            val loader = AdLoader.Builder(this, "ca-app-pub-9940728659432865/2572993259")
+            val loader = AdLoader.Builder(this, AdMobIds.NATIVE)
                 .forNativeAd { ad: NativeAd ->
                     if (isFinishing || isDestroyed) {
                         ad.destroy()
@@ -425,7 +434,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadInterstitial() {
         runCatching {
-            InterstitialAd.load(this, "ca-app-pub-9940728659432865/6512238262", AdRequest.Builder().build(),
+            InterstitialAd.load(this, AdMobIds.INTERSTITIAL, AdRequest.Builder().build(),
                 object : InterstitialAdLoadCallback() {
                     override fun onAdLoaded(ad: InterstitialAd) { interstitialAd = ad }
                     override fun onAdFailedToLoad(e: LoadAdError) {
@@ -441,7 +450,7 @@ class MainActivity : AppCompatActivity() {
         if (appOpenLoading || appOpenAd != null) return
         appOpenLoading = true
         runCatching {
-            AppOpenAd.load(this, "ca-app-pub-9940728659432865/9951869956", AdRequest.Builder().build(),
+            AppOpenAd.load(this, AdMobIds.APP_OPEN, AdRequest.Builder().build(),
                 object : AppOpenAd.AppOpenAdLoadCallback() {
                     override fun onAdLoaded(ad: AppOpenAd) { appOpenLoading = false; appOpenAd = ad }
                     override fun onAdFailedToLoad(e: LoadAdError) {
@@ -729,7 +738,7 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             RewardedAd.load(
                 this,
-                "ca-app-pub-9940728659432865/7753257039",
+                AdMobIds.REWARDED,
                 AdRequest.Builder().build(),
                 object : RewardedAdLoadCallback() {
                     override fun onAdLoaded(ad: RewardedAd) {
