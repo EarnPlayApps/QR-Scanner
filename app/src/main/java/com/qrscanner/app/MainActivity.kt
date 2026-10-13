@@ -91,6 +91,7 @@ class MainActivity : AppCompatActivity() {
     private var appOpenShowing = false
     private var rewardedAd: RewardedAd? = null
     private var rewardedLoading = false
+    private var nativeAd: NativeAd? = null
     private var nativeAdLoaded = false
     private var nativeAdLoading = false
     private var welcomeBannerRequested = false
@@ -472,7 +473,9 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     adView.setNativeAd(ad)
+                    nativeAd = ad
                     nativeAdLoaded = true
+                    android.util.Log.i("QRScannerAds", "Native ad loaded successfully")
                     // Only reserve space for a native ad after a real ad has loaded.
                     val resultScreen = findViewById<View>(R.id.resultScreen)
                     findViewById<View>(R.id.nativeAdContainer).visibility =
@@ -533,7 +536,11 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             AppOpenAd.load(this, adUnitId("app_open"), AdRequest.Builder().build(),
                 object : AppOpenAd.AppOpenAdLoadCallback() {
-                    override fun onAdLoaded(ad: AppOpenAd) { appOpenLoading = false; appOpenAd = ad }
+                    override fun onAdLoaded(ad: AppOpenAd) {
+                        appOpenLoading = false
+                        appOpenAd = ad
+                        android.util.Log.i("QRScannerAds", "App-open ad loaded successfully")
+                    }
                     override fun onAdFailedToLoad(e: LoadAdError) {
                         appOpenLoading = false
                         appOpenAd = null
@@ -584,7 +591,6 @@ class MainActivity : AppCompatActivity() {
         if (isFinishing || isDestroyed) return
         if (!::preview.isInitialized) return
         locked = false
-        processingFrame = false
         scanAgainButton.visibility = View.VISIBLE
         cameraMessage.text = t("Letak QR atau barcode dalam bingkai", "Place a QR code or barcode inside the frame")
         statusText.text = t("Kamera aktif — sedang mengimbas", "Camera active — scanning")
@@ -898,6 +904,7 @@ class MainActivity : AppCompatActivity() {
                     override fun onAdLoaded(ad: RewardedAd) {
                         rewardedLoading = false
                         rewardedAd = ad
+                        android.util.Log.i("QRScannerAds", "Rewarded ad loaded successfully")
                     }
                     override fun onAdFailedToLoad(error: LoadAdError) {
                         rewardedLoading = false
@@ -938,6 +945,7 @@ class MainActivity : AppCompatActivity() {
             ad.show(this) { _: RewardItem ->
                 freeScanCredits += 1
                 prefs.edit().putInt("free_scan_credits", freeScanCredits).apply()
+                android.util.Log.i("QRScannerAds", "Reward earned; freeScanCredits=$freeScanCredits")
                 Toast.makeText(
                     this,
                     t("Ganjaran diterima: +1 free scan. Baki: $freeScanCredits", "Reward received: +1 free scan. Balance: $freeScanCredits"),
@@ -1239,6 +1247,8 @@ class MainActivity : AppCompatActivity() {
             runCatching { findViewById<AdView>(R.id.resultBannerAd).destroy() }
         }
         if (scannerDelegate.isInitialized()) runCatching { scanner.close() }
+        runCatching { nativeAd?.destroy() }
+        nativeAd = null
         executor.shutdown()
         super.onDestroy()
     }
