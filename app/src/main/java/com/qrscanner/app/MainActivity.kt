@@ -594,6 +594,7 @@ class MainActivity : AppCompatActivity() {
     @ExperimentalGetImage
     private fun getMediaImage(proxy: ImageProxy): android.media.Image? = proxy.image
 
+    @ExperimentalGetImage
     private fun startCamera() {
         if (isFinishing || isDestroyed) return
         if (!::preview.isInitialized) return
