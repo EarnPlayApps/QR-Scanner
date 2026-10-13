@@ -130,6 +130,8 @@
 
     </LinearLayout>
 
+    <TextView android:id="@+id/welcomeAdLabel" android:layout_width="wrap_content" android:layout_height="24dp" android:layout_gravity="bottom|end" android:layout_marginEnd="8dp" android:layout_marginBottom="50dp" android:drawableStart="@drawable/ic_ad" android:drawableTint="@color/orange" android:drawablePadding="4dp" android:gravity="center" android:paddingStart="8dp" android:paddingEnd="8dp" android:text="Iklan / Ad" android:textColor="@color/orange_dark" android:textSize="10sp" android:textStyle="bold" android:background="@drawable/bg_ad_badge" android:visibility="gone"/>
+
     <!-- Welcome banner: shown only on launch screen. -->
     <com.google.android.gms.ads.AdView
         android:id="@+id/welcomeBannerAd"
@@ -394,6 +396,8 @@
             android:minWidth="0dp"
             android:minHeight="0dp"/>
 
+        <TextView android:id="@+id/scannerAdLabel" android:layout_width="wrap_content" android:layout_height="22dp" android:layout_gravity="end" android:drawableStart="@drawable/ic_ad" android:drawableTint="@color/orange" android:drawablePadding="4dp" android:gravity="center" android:paddingStart="7dp" android:paddingEnd="7dp" android:text="Iklan / Ad" android:textColor="@color/orange_dark" android:textSize="10sp" android:textStyle="bold" android:background="@drawable/bg_ad_badge" android:visibility="gone"/>
+
         <com.google.android.gms.ads.AdView
             android:id="@+id/bannerAd"
             android:layout_width="match_parent"
@@ -651,6 +655,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"/>
             </FrameLayout>
+
+            <TextView android:id="@+id/resultAdLabel" android:layout_width="wrap_content" android:layout_height="22dp" android:layout_gravity="end" android:layout_marginTop="8dp" android:drawableStart="@drawable/ic_ad" android:drawableTint="@color/orange" android:drawablePadding="4dp" android:gravity="center" android:paddingStart="7dp" android:paddingEnd="7dp" android:text="Iklan / Ad" android:textColor="@color/orange_dark" android:textSize="10sp" android:textStyle="bold" android:background="@drawable/bg_ad_badge" android:visibility="gone"/>
 
             <com.google.android.gms.ads.AdView
                 android:id="@+id/resultBannerAd"

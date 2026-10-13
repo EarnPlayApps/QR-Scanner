@@ -216,9 +216,11 @@ class MainActivity : AppCompatActivity() {
         scanningStarted = true
         findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
         findViewById<AdView>(R.id.welcomeBannerAd).visibility = View.GONE
+        findViewById<View>(R.id.welcomeAdLabel).visibility = View.GONE
         findViewById<View>(R.id.resultScreen).visibility = View.GONE
         findViewById<View>(R.id.mainContent).visibility = View.VISIBLE
         findViewById<AdView>(R.id.bannerAd).visibility = if (scannerBannerLoaded) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.scannerAdLabel).visibility = if (scannerBannerLoaded) View.VISIBLE else View.GONE
         findViewById<View>(R.id.nativeAdContainer).visibility = View.GONE
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             permissionButton.visibility = View.GONE
@@ -310,7 +312,9 @@ class MainActivity : AppCompatActivity() {
         welcomeBanner.adListener = object : AdListener() {
             override fun onAdLoaded() {
                 android.util.Log.i("QRScannerAds", "Welcome banner loaded successfully")
-                welcomeBanner.visibility = if (findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE) View.VISIBLE else View.GONE
+                val visible = findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE
+                welcomeBanner.visibility = if (visible) View.VISIBLE else View.GONE
+                findViewById<View>(R.id.welcomeAdLabel).visibility = if (visible) View.VISIBLE else View.GONE
             }
             override fun onAdFailedToLoad(error: LoadAdError) {
                 welcomeBanner.visibility = View.GONE
@@ -322,11 +326,14 @@ class MainActivity : AppCompatActivity() {
             override fun onAdLoaded() {
                 scannerBannerLoaded = true
                 android.util.Log.i("QRScannerAds", "Scanner banner loaded successfully")
-                scannerBanner.visibility = if (findViewById<View>(R.id.mainContent).visibility == View.VISIBLE) View.VISIBLE else View.GONE
+                val visible = findViewById<View>(R.id.mainContent).visibility == View.VISIBLE
+                scannerBanner.visibility = if (visible) View.VISIBLE else View.GONE
+                findViewById<View>(R.id.scannerAdLabel).visibility = if (visible) View.VISIBLE else View.GONE
             }
             override fun onAdFailedToLoad(error: LoadAdError) {
                 scannerBannerLoaded = false
                 scannerBanner.visibility = View.GONE
+                findViewById<View>(R.id.scannerAdLabel).visibility = View.GONE
                 android.util.Log.w("QRScannerAds", "Scanner banner failed: code=${error.code}, domain=${error.domain}, message=${error.message}, response=${error.responseInfo}")
                 retryAdsLater { requestBanner(scannerBanner, "scanner") }
             }
@@ -335,11 +342,14 @@ class MainActivity : AppCompatActivity() {
             override fun onAdLoaded() {
                 resultBannerLoaded = true
                 android.util.Log.i("QRScannerAds", "Result banner loaded successfully")
-                resultBanner.visibility = if (findViewById<View>(R.id.resultScreen).visibility == View.VISIBLE) View.VISIBLE else View.GONE
+                val visible = findViewById<View>(R.id.resultScreen).visibility == View.VISIBLE
+                resultBanner.visibility = if (visible) View.VISIBLE else View.GONE
+                findViewById<View>(R.id.resultAdLabel).visibility = if (visible) View.VISIBLE else View.GONE
             }
             override fun onAdFailedToLoad(error: LoadAdError) {
                 resultBannerLoaded = false
                 resultBanner.visibility = View.GONE
+                findViewById<View>(R.id.resultAdLabel).visibility = View.GONE
                 android.util.Log.w("QRScannerAds", "Result banner failed: code=${error.code}, domain=${error.domain}, message=${error.message}, response=${error.responseInfo}")
                 retryAdsLater { requestBanner(resultBanner, "result") }
             }
@@ -622,6 +632,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.mainContent).visibility = View.GONE
         findViewById<View>(R.id.welcomeScreen).visibility = View.GONE
         findViewById<View>(R.id.resultScreen).visibility = View.VISIBLE
+        findViewById<View>(R.id.resultAdLabel).visibility = if (resultBannerLoaded) View.VISIBLE else View.GONE
         findViewById<View>(R.id.nativeAdContainer).visibility = if (nativeAdLoaded) View.VISIBLE else View.GONE
         findViewById<AdView>(R.id.resultBannerAd).visibility = if (resultBannerLoaded) View.VISIBLE else View.GONE
         findViewById<AdView>(R.id.bannerAd).visibility = View.GONE
@@ -788,7 +799,8 @@ class MainActivity : AppCompatActivity() {
             t("Sejarah scan", "Scan History"),
             t("Tetapan", "Settings"),
             t("Tonton iklan untuk +1 scan percuma", "Watch ad for +1 free scan"),
-            t("Privasi & Tentang", "Privacy & About")
+            t("Privasi & Polisi", "Privacy & Policy"),
+            t("Pilihan privasi iklan", "Ad privacy choices")
         )
         AlertDialog.Builder(this)
             .setTitle(t("Menu QR Scanner", "QR Scanner Menu"))
@@ -800,6 +812,7 @@ class MainActivity : AppCompatActivity() {
                     3 -> showSettings()
                     4 -> showRewardedAd()
                     5 -> showPrivacyPolicy()
+                    6 -> showAdPrivacyOptions()
                 }
             }
             .setNegativeButton(t("Tutup", "Close"), null)
@@ -938,28 +951,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showPrivacyPolicy() {
-        val dialog = AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle(t("Privasi & Polisi", "Privacy & Policy"))
             .setMessage(t(
-                "QR Scanner menggunakan kamera hanya untuk scan. Sejarah scan disimpan pada peranti. Google AdMob memaparkan iklan dan Google/rakan pengiklan mungkin memproses data peranti serta interaksi iklan mengikut tetapan dan polisi mereka. Jangan imbas atau kongsi maklumat sulit.",
-                "QR Scanner uses the camera only for scanning. Scan history is stored on your device. Google AdMob displays ads, and Google/advertising partners may process device and ad-interaction data according to their settings and policies. Avoid scanning or sharing sensitive information."
+                "KAMERA & GALERI: digunakan untuk mengimbas kandungan yang anda pilih.\n\nSEJARAH: disimpan pada peranti dan boleh dipadam melalui Tetapan.\n\nIKLAN: QR Scanner menggunakan Google AdMob termasuk banner, native, pengantara, iklan pembukaan dan iklan ganjaran. Google dan rakan iklan mungkin memproses pengecam peranti, data diagnostik dan interaksi iklan mengikut polisi serta tetapan yang berkenaan. Iklan hanya diminta apabila status persetujuan membenarkan.\n\nPAUTAN: anda memilih sama ada mahu membuka pautan hasil imbasan. Berhati-hati dengan laman yang tidak dikenali. Jangan imbas atau kongsi maklumat sulit. Dasar penuh dan terma tersedia di bawah.",
+                "CAMERA & GALLERY: used to scan content you choose.\n\nHISTORY: stored on your device and can be cleared in Settings.\n\nADS: QR Scanner uses Google AdMob, including banner, native, interstitial, app-open and rewarded ads. Google and advertising partners may process device identifiers, diagnostics and ad interactions under applicable policies and settings. Ads are requested only when consent status allows it.\n\nLINKS: you choose whether to open scanned links. Be careful with unfamiliar websites. Do not scan or share sensitive information. The full policy and terms are available below."
             ))
             .setNegativeButton(t("Tutup", "Close"), null)
-            .setPositiveButton(t("Buka Dasar Privasi", "Open Privacy Policy")) { _, _ ->
-                runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/EarnPlayApps/QR-Scanner/blob/main/PRIVACY_POLICY.md"))) }
+            .setPositiveButton(t("Dasar Privasi", "Privacy Policy")) { _, _ ->
+                openPolicyUrl("https://github.com/EarnPlayApps/QR-Scanner/blob/main/PRIVACY_POLICY.md")
             }
+            .setNeutralButton(t("Terma Penggunaan", "Terms of Use")) { _, _ ->
+                openPolicyUrl("https://github.com/EarnPlayApps/QR-Scanner/blob/main/TERMS_OF_USE.md")
+            }
+            .show()
+    }
+
+    private fun openPolicyUrl(url: String) {
+        runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+            .onFailure { Toast.makeText(this, t("Tidak dapat membuka pautan. Cuba semula.", "Could not open the link. Please try again."), Toast.LENGTH_LONG).show() }
+    }
+
+    private fun showAdPrivacyOptions() {
         val consentInformation = UserMessagingPlatform.getConsentInformation(this)
-        if (consentInformation.privacyOptionsRequirementStatus ==
-            ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED) {
-            dialog.setNeutralButton(t("Pilihan privasi iklan", "Ad privacy choices")) { _, _ ->
-                UserMessagingPlatform.showPrivacyOptionsForm(this) { _ ->
-                    if (consentInformation.canRequestAds()) {
-                        // Ad requests remain controlled by the UMP consent status.
-                    }
-                }
+        if (consentInformation.privacyOptionsRequirementStatus == ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED) {
+            UserMessagingPlatform.showPrivacyOptionsForm(this) { formError ->
+                if (formError != null) Toast.makeText(this, t("Pilihan privasi belum tersedia.", "Privacy choices are not available right now."), Toast.LENGTH_SHORT).show()
             }
+        } else {
+            AlertDialog.Builder(this)
+                .setTitle(t("Privasi iklan", "Ad privacy"))
+                .setMessage(t("Google tidak memerlukan borang pilihan privasi tambahan pada masa ini. Tetapan iklan mungkin masih boleh diurus melalui tetapan Google pada peranti anda.", "Google does not currently require an additional privacy-options form for this app. You may still manage ad settings through Google settings on your device."))
+                .setPositiveButton("OK", null)
+                .show()
         }
-        dialog.show()
     }
 
     private fun saveSettings() {
