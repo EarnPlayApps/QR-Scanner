@@ -270,13 +270,18 @@ class MainActivity : AppCompatActivity() {
             consentParameters,
             {
                 android.util.Log.i("QRScannerAds", "UMP update success; canRequestAds=${consentInformation.canRequestAds()}")
-                UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) { formError ->
-                    if (formError != null) {
-                        android.util.Log.w("QRScannerAds", "UMP consent form: ${formError.errorCode} ${formError.message}")
+                runCatching {
+                    UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) { formError ->
+                        if (formError != null) {
+                            android.util.Log.w("QRScannerAds", "UMP consent form: ${formError.errorCode} ${formError.message}")
+                        }
+                        val allowed = consentInformation.canRequestAds()
+                        android.util.Log.i("QRScannerAds", "UMP form finished; canRequestAds=$allowed")
+                        initializeAdsIfAllowed(allowed)
                     }
-                    val allowed = consentInformation.canRequestAds()
-                    android.util.Log.i("QRScannerAds", "UMP form finished; canRequestAds=$allowed")
-                    initializeAdsIfAllowed(allowed)
+                }.onFailure {
+                    android.util.Log.e("QRScannerAds", "Could not present UMP consent form", it)
+                    initializeAdsIfAllowed(consentInformation.canRequestAds())
                 }
             },
             { formError ->
