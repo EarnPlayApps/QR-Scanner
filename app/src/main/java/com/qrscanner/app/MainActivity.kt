@@ -284,7 +284,10 @@ class MainActivity : AppCompatActivity() {
                 when {
                     findViewById<View>(R.id.welcomeScreen).visibility == View.VISIBLE -> requestBanner(findViewById(R.id.welcomeBannerAd), "welcome")
                     findViewById<View>(R.id.mainContent).visibility == View.VISIBLE -> requestBanner(findViewById(R.id.bannerAd), "scanner")
-                    findViewById<View>(R.id.resultScreen).visibility == View.VISIBLE -> requestBanner(findViewById(R.id.resultBannerAd), "result")
+                    findViewById<View>(R.id.resultScreen).visibility == View.VISIBLE -> {
+                        requestBanner(findViewById(R.id.resultBannerAd), "result")
+                        loadNativeAd()
+                    }
                 }
                 loadInterstitial()
                 loadAppOpenAd()
