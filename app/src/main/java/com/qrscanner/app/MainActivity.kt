@@ -290,7 +290,7 @@ class MainActivity : AppCompatActivity() {
     private fun adUnitId(format: String): String {
         // Debug APKs use Google demo units so every format can be verified safely.
         // Release APKs use the publisher's production units.
-        val test = BuildConfig.DEBUG
+        val test = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
         return when (format) {
             "banner" -> if (test) "ca-app-pub-3940256099942544/6300978111" else "ca-app-pub-9940728659432865/2764564944"
             "native" -> if (test) "ca-app-pub-3940256099942544/2247696110" else "ca-app-pub-9940728659432865/2572993259"
@@ -304,7 +304,7 @@ class MainActivity : AppCompatActivity() {
     private fun requestBanner(adView: AdView, slot: String) {
         if (isFinishing || isDestroyed || !adsInitializationStarted) return
         adView.adUnitId = adUnitId("banner")
-        android.util.Log.i("QRScannerAds", "Requesting $slot banner; debugTestAds=${BuildConfig.DEBUG}")
+        android.util.Log.i("QRScannerAds", "Requesting $slot banner; debugTestAds=${(applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0}")
         runCatching {
             adView.loadAd(AdRequest.Builder().build())
         }.onFailure {
