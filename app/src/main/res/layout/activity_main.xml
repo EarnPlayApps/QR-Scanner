@@ -136,10 +136,13 @@
     <com.google.android.gms.ads.AdView
         android:id="@+id/welcomeBannerAd"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_gravity="bottom"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
         android:visibility="gone"
-        android:background="@color/surface"
+        android:background="@drawable/bg_round"
+        android:padding="3dp"
         ads:adSize="BANNER"
         ads:adUnitId="@string/admob_banner_id"/>
 
@@ -400,7 +403,11 @@
         <com.google.android.gms.ads.AdView
             android:id="@+id/bannerAd"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_round"
+            android:padding="3dp"
             android:visibility="gone"
             ads:adSize="BANNER"
             ads:adUnitId="@string/admob_banner_id"/>
@@ -661,8 +668,12 @@
             <com.google.android.gms.ads.AdView
                 android:id="@+id/resultBannerAd"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="12dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/bg_round"
+                android:padding="3dp"
                 android:visibility="gone"
                 ads:adSize="BANNER"
                 ads:adUnitId="@string/admob_banner_id"/>
