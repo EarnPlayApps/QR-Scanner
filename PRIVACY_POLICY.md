@@ -1,32 +1,29 @@
 # QR Scanner — Privacy Policy
 
-Last updated: 19 September 2026
+Last updated: 13 October 2026
 
-QR Scanner is a utility application for scanning QR codes and barcodes.
+QR Scanner is a utility app for scanning QR codes and supported barcodes.
 
-## Camera
-The app requests camera permission only to scan QR codes and barcodes. Camera frames are processed for scanning and are not intentionally stored by QR Scanner.
+## Camera and gallery
+Camera permission is used for live scanning. Camera frames are processed for scanning and are not intentionally stored by QR Scanner. If you choose an image from Gallery, that selected image is processed to find QR codes or barcodes; QR Scanner does not intentionally upload it to an app-owned server.
 
-## Gallery
-If you choose the Gallery feature, the selected image is used for barcode/QR scanning. QR Scanner does not intentionally upload the selected image to its own server.
+## Scan history and settings
+Scan history and app preferences are stored locally on your device. You can clear saved scan history in the app settings. Your device's own backup or system settings may affect retention.
 
-## Scan History
-Scan history is stored locally on your device. You can clear all saved history from the app settings.
+## Advertising and consent
+QR Scanner uses Google AdMob and may show banner, native, interstitial, app-open, and rewarded ads. Google and its advertising partners may process device identifiers, advertising-related information, diagnostics, and ad interaction data under their own policies and applicable settings. The app uses Google's User Messaging Platform (UMP) consent flow where applicable and requests ads only when the consent status allows it. Ad availability is not guaranteed. Open **More → Ad privacy choices** in the app to access applicable privacy options.
 
-## Advertising
-QR Scanner uses Google AdMob for advertising. Google and its advertising partners may process information such as device identifiers, advertising-related information, diagnostics, and ad interaction data according to their policies and applicable settings.
-
-## Links
-When you choose to open a scanned web link, the link is handed to an appropriate app/browser on your device. QR Scanner does not control the destination website.
+## Scanned links
+Opening a scan result is your choice unless you enable automatic link opening in Settings. External links open in another app or browser and are controlled by their respective operators. Check unfamiliar links before proceeding.
 
 ## Children
-QR Scanner is a general utility app and is not specifically directed to children.
+The app is a general utility and is not specifically directed to children. If the app's audience or configuration changes, its advertising and store settings must be reviewed accordingly.
 
 ## Your choices
-You can control camera permission through Android settings. You can disable optional automatic link opening in QR Scanner settings. Advertising and consent choices may also depend on your device, region, and Google settings.
+You can manage camera permission through Android settings, turn off optional automatic link opening, clear scan history, and use applicable ad privacy controls. You may also manage certain advertising settings through Google and Android settings.
 
 ## Contact
-For privacy questions or app support, email **earnplayapps@gmail.com**. You may also open the project's public support page at https://github.com/EarnPlayApps/QR-Scanner/issues.
+For privacy questions or app support, email **earnplayapps@gmail.com** or visit https://github.com/EarnPlayApps/QR-Scanner/issues.
 
 ## Changes
-This policy may be updated when app functionality, advertising configuration, or legal requirements change.
+This policy may be updated when app functionality, advertising configuration or legal requirements change.
